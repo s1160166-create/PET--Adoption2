@@ -1,0 +1,3086 @@
+git init
+git add .
+git commit -m "Initial website version"
+git branch -M main
+git remote add origin https://github.com/s1160166/PET--Adoption1.git
+git push -u origin main<!DOCTYPE html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Adoption Simulator | Find Your Perfect Pet Match</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FF8C39',
+                        secondary: '#4CAF50',
+                        accent: '#FFD166',
+                        neutral: '#F8F9FA',
+                        dark: '#343A40'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'bounce-slow': 'bounce 3s infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .text-shadow-lg {
+                text-shadow: 0 4px 8px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08);
+            }
+            .transition-all-300 {
+                transition: all 300ms ease-in-out;
+            }
+            .pet-card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
+        }
+        
+        /* Custom Styles */
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            scroll-behavior: smooth;
+        }
+        
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
+        
+        .pet-avatar {
+            transition: transform 0.3s ease;
+        }
+        
+        .pet-avatar:hover {
+            transform: scale(1.05);
+        }
+        
+        .game-action {
+            transition: all 0.2s ease;
+        }
+        
+        .game-action:hover {
+            transform: translateY(-2px);
+        }
+        
+        .game-action:active {
+            transform: translateY(0);
+        }
+        
+        .quiz-option {
+            transition: all 0.2s ease;
+        }
+        
+        .quiz-option:hover {
+            background-color: rgba(76, 175, 80, 0.1);
+        }
+        
+        .quiz-option.correct {
+            background-color: rgba(76, 175, 80, 0.2);
+            border-color: #4CAF50;
+        }
+        
+        .quiz-option.incorrect {
+            background-color: rgba(244, 67, 54, 0.2);
+            border-color: #F44336;
+        }
+        
+        /* Animations */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        /* Page Transitions */
+        .page {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        
+        .page.active {
+            display: block;
+            opacity: 1;
+        }
+        
+        /* Loading Skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+        }
+        
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="bg-neutral min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md fixed w-full z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-paw text-primary text-2xl"></i>
+                <span class="text-xl font-bold text-dark">PetAdoptSim</span>
+            </div>
+            
+            <div class="hidden md:flex space-x-8">
+                <a href="#" class="nav-link text-dark hover:text-primary transition-all-300" data-page="landing">Home</a>
+                <a href="#" class="nav-link text-dark hover:text-primary transition-all-300" data-page="simulation">Pet Simulation</a>
+                <a href="#" class="nav-link text-dark hover:text-primary transition-all-300" data-page="quiz">Care Quiz</a>
+                <a href="#" class="nav-link text-dark hover:text-primary transition-all-300" data-page="recommendations">Recommendations</a>
+            </div>
+            
+            <div class="md:hidden">
+                <button id="mobile-menu-button" class="text-dark focus:outline-none">
+                    <i class="fa fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white shadow-lg absolute w-full">
+            <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+                <a href="#" class="nav-link text-dark hover:text-primary py-2 transition-all-300" data-page="landing">Home</a>
+                <a href="#" class="nav-link text-dark hover:text-primary py-2 transition-all-300" data-page="simulation">Pet Simulation</a>
+                <a href="#" class="nav-link text-dark hover:text-primary py-2 transition-all-300" data-page="quiz">Care Quiz</a>
+                <a href="#" class="nav-link text-dark hover:text-primary py-2 transition-all-300" data-page="recommendations">Recommendations</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 pt-24 pb-16">
+        <!-- Landing Page -->
+        <section id="landing" class="page active">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-8 mb-16">
+                <div class="md:w-1/2">
+                    <h1 class="text-4xl md:text-5xl font-bold text-dark mb-4 text-shadow-lg">
+                        Find Your <span class="text-primary">Perfect Pet</span> Match
+                    </h1>
+                    <p class="text-lg text-gray-600 mb-8">
+                        Discover your ideal pet through our interactive simulation and knowledge test. 
+                        Learn what it takes to be a responsible pet owner and find your furry (or scaly) companion.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button class="btn-primary bg-primary hover:bg-opacity-90 text-white font-medium py-3 px-6 rounded-lg shadow-md transition-all-300 flex items-center justify-center" data-page="simulation">
+                            <i class="fa fa-gamepad mr-2"></i> Start Simulation
+                        </button>
+                        <button class="btn-secondary bg-white border border-primary text-primary hover:bg-primary hover:text-white font-medium py-3 px-6 rounded-lg shadow-sm transition-all-300 flex items-center justify-center" data-page="quiz">
+                            <i class="fa fa-question-circle mr-2"></i> Take Quiz
+                        </button>
+                    </div>
+                </div>
+                <div class="md:w-1/2 relative">
+                    <div class="relative z-10 rounded-2xl overflow-hidden shadow-xl">
+                        <img src="https://pic.rmb.bdstatic.com/bjh/bb81209a6979/250101/602b9c9549d0e4dfee684e1e21469615.jpeg" alt="Happy Pets" class="w-full h-auto">
+                    </div>
+                    <div class="absolute -bottom-4 -right-4 w-24 h-24 bg-accent rounded-full opacity-70 z-0"></div>
+                    <div class="absolute -top-4 -left-4 w-16 h-16 bg-secondary rounded-full opacity-70 z-0"></div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                <div class="bg-white rounded-xl shadow-md p-6 transition-all-300 hover:shadow-lg">
+                    <div class="w-16 h-16 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mb-4">
+                        <i class="fa fa-gamepad text-primary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-dark mb-2">Pet Simulation</h3>
+                    <p class="text-gray-600">
+                        Experience a day in the life of a pet owner with our interactive simulation. 
+                        Choose from different pet types and learn about their needs.
+                    </p>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-md p-6 transition-all-300 hover:shadow-lg">
+                    <div class="w-16 h-16 bg-secondary bg-opacity-10 rounded-full flex items-center justify-center mb-4">
+                        <i class="fa fa-question-circle text-secondary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-dark mb-2">Care Knowledge Test</h3>
+                    <p class="text-gray-600">
+                        Test your knowledge about pet care. Our quiz will help you understand 
+                        what it takes to care for different types of pets.
+                    </p>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-md p-6 transition-all-300 hover:shadow-lg">
+                    <div class="w-16 h-16 bg-accent bg-opacity-10 rounded-full flex items-center justify-center mb-4">
+                        <i class="fa fa-heart text-accent text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-dark mb-2">Personalized Recommendations</h3>
+                    <p class="text-gray-600">
+                        Based on your simulation experience and quiz results, we'll recommend 
+                        the perfect pet that matches your lifestyle and preferences.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="bg-gradient-to-r from-primary to-secondary rounded-2xl shadow-xl p-8 text-white">
+                <div class="flex flex-col md:flex-row items-center justify-between">
+                    <div class="md:w-2/3 mb-6 md:mb-0">
+                        <h2 class="text-2xl md:text-3xl font-bold mb-4">Ready to Find Your Perfect Pet?</h2>
+                        <p class="text-lg opacity-90 mb-6">
+                            Join thousands of happy pet owners who found their perfect match through our platform.
+                            Start your journey today!
+                        </p>
+                        <button class="bg-white text-primary hover:bg-opacity-90 font-medium py-3 px-6 rounded-lg shadow-md transition-all-300 flex items-center" data-page="simulation">
+                            <i class="fa fa-paw mr-2"></i> Begin Your Journey
+                        </button>
+                    </div>
+                    <div class="md:w-1/3 flex justify-center">
+                        <div class="relative">
+                            <img src="https://img0.baidu.com/it/u=123058217,3045251744&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=889" alt="Pets Together" class="w-64 h-auto rounded-lg shadow-lg float-animation">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pet Simulation Page -->
+        <section id="simulation" class="page">
+            <div class="text-center mb-12">
+                <h1 class="text-3xl md:text-4xl font-bold text-dark mb-4">Pet Adoption Simulation</h1>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Experience a day in the life of a pet owner. Choose a pet type below and learn what it takes to care for them.
+                </p>
+            </div>
+            
+            <!-- Pet Selection -->
+            <div id="pet-selection" class="mb-16">
+                <h2 class="text-2xl font-semibold text-dark mb-6 text-center">Choose Your Pet Type</h2>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cat -->
+                    <div class="pet-card bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover cursor-pointer" data-pet-type="cat">
+                        <div class="relative">
+                            <img src="https://pic.rmb.bdstatic.com/bjh/news/422d8fb919b80493a598aa2244c66ad4.jpeg" alt="Cat" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                                <h3 class="text-xl font-bold text-white">Cat</h3>
+                                <p class="text-white text-opacity-80">Independent but affectionate companions</p>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-medium text-gray-500">Care Level</span>
+                                <div class="flex">
+                                    <i class="fa fa-star text-accent"></i>
+                                    <i class="fa fa-star text-accent"></i>
+                                    <i class="fa fa-star-o text-gray-300"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-medium text-gray-500">Time Commitment</span>
+                                <div class="flex">
+                                    <i class="fa fa-clock-o text-primary"></i>
+                                    <i class="fa fa-clock-o text-primary"></i>
+                                    <i class="fa fa-clock-o-o text-gray-300"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-gray-500">Space Needed</span>
+                                <div class="flex">
+                                    <i class="fa fa-home text-secondary"></i>
+                                    <i class="fa fa-home-o text-gray-300"></i>
+                                    <i class="fa fa-home-o text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dog -->
+                    <div class="pet-card bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover cursor-pointer" data-pet-type="dog">
+                        <div class="relative">
+                            <img src="https://copyright.bdstatic.com/vcg/creative/6b680c089285603d870e218c8a4a22d9.jpg" alt="Dog" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                                <h3 class="text-xl font-bold text-white">Dog</h3>
+                                <p class="text-white text-opacity-80">Loyal and energetic family members</p>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-medium text-gray-500">Care Level</span>
+                                <div class="flex">
+                                    <i class="fa fa-star text-accent"></i>
+                                    <i class="fa fa-star text-accent"></i>
+                                    <i class="fa fa-star text-accent"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-medium text-gray-500">Time Commitment</span>
+                                <div class="flex">
+                                    <i class="fa fa-clock-o text-primary"></i>
+                                    <i class="fa fa-clock-o text-primary"></i>
+                                    <i class="fa fa-clock-o text-primary"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-gray-500">Space Needed</span>
+                                <div class="flex">
+                                    <i class="fa fa-home text-secondary"></i>
+                                    <i class="fa fa-home text-secondary"></i>
+                                    <i class="fa fa-home-o text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rabbit -->
+                    <div class="pet-card bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover cursor-pointer" data-pet-type="rabbit">
+                        <div class="relative">
+                            <img src="https://pic.rmb.bdstatic.com/bjh/240208/25a28a574935a690867970f084974e316484.png@h_1280" alt="Rabbit" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                                <h3 class="text-xl font-bold text-white">Rabbit</h3>
+                                <p class="text-white text-opacity-80">Gentle and social creatures</p>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-medium text-gray-500">Care Level</span>
+                                <div class="flex">
+                                    <i class="fa fa-star text-accent"></i>
+                                    <i class="fa fa-star text-accent"></i>
+                                    <i class="fa fa-star-o text-gray-300"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-medium text-gray-500">Time Commitment</span>
+                                <div class="flex">
+                                    <i class="fa fa-clock-o text-primary"></i>
+                                    <i class="fa fa-clock-o text-primary"></i>
+                                    <i class="fa fa-clock-o-o text-gray-300"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-gray-500">Space Needed</span>
+                                <div class="flex">
+                                    <i class="fa fa-home text-secondary"></i>
+                                    <i class="fa fa-home text-secondary"></i>
+                                    <i class="fa fa-home-o text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Turtle -->
+                    <div class="pet-card bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover cursor-pointer" data-pet-type="turtle">
+                        <div class="relative">
+                            <img src="https://pic.rmb.bdstatic.com/bjh/3ea10a96a074/250213/555665b4fbfd6589b10bd67de4105afe.jpeg" alt="Turtle" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                                <h3 class="text-xl font-bold text-white">Turtle</h3>
+                                <p class="text-white text-opacity-80">Low-maintenance, long-living pets</p>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-medium text-gray-500">Care Level</span>
+                                <div class="flex">
+                                    <i class="fa fa-star text-accent"></i>
+                                    <i class="fa fa-star-o text-gray-300"></i>
+                                    <i class="fa fa-star-o text-gray-300"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-medium text-gray-500">Time Commitment</span>
+                                <div class="flex">
+                                    <i class="fa fa-clock-o text-primary"></i>
+                                    <i class="fa fa-clock-o-o text-gray-300"></i>
+                                    <i class="fa fa-clock-o-o text-gray-300"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-gray-500">Space Needed</span>
+                                <div class="flex">
+                                    <i class="fa fa-home text-secondary"></i>
+                                    <i class="fa fa-home text-secondary"></i>
+                                    <i class="fa fa-home-o text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Lizard -->
+                    <div class="pet-card bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover cursor-pointer" data-pet-type="lizard">
+                        <div class="relative">
+                            <img src="https://img1.baidu.com/it/u=1463002101,123588015&fm=253&fmt=auto&app=120&f=JPEG?w=1139&h=723" alt="Lizard" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                                <h3 class="text-xl font-bold text-white">Lizard</h3>
+                                <p class="text-white text-opacity-80">Fascinating and unique reptilian pets</p>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-medium text-gray-500">Care Level</span>
+                                <div class="flex">
+                                    <i class="fa fa-star text-accent"></i>
+                                    <i class="fa fa-star text-accent"></i>
+                                    <i class="fa fa-star text-accent"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-medium text-gray-500">Time Commitment</span>
+                                <div class="flex">
+                                    <i class="fa fa-clock-o text-primary"></i>
+                                    <i class="fa fa-clock-o text-primary"></i>
+                                    <i class="fa fa-clock-o-o text-gray-300"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-gray-500">Space Needed</span>
+                                <div class="flex">
+                                    <i class="fa fa-home text-secondary"></i>
+                                    <i class="fa fa-home-o text-gray-300"></i>
+                                    <i class="fa fa-home-o text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Small Mammal -->
+                    <div class="pet-card bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover cursor-pointer" data-pet-type="small-mammal">
+                        <div class="relative">
+                            <img src="https://qcloud.dpfile.com/pc/ImBCNmBL5TMX_tKJKZqetLEfcDun3T_4KN7uaY1w45BHcNdd0rKT_yP6s6vaki9A.jpg" alt="Small Mammal" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                                <h3 class="text-xl font-bold text-white">Small Mammal</h3>
+                                <p class="text-white text-opacity-80">Hamsters, guinea pigs, and more</p>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-medium text-gray-500">Care Level</span>
+                                <div class="flex">
+                                    <i class="fa fa-star text-accent"></i>
+                                    <i class="fa fa-star-o text-gray-300"></i>
+                                    <i class="fa fa-star-o text-gray-300"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-medium text-gray-500">Time Commitment</span>
+                                <div class="flex">
+                                    <i class="fa fa-clock-o text-primary"></i>
+                                    <i class="fa fa-clock-o-o text-gray-300"></i>
+                                    <i class="fa fa-clock-o-o text-gray-300"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-gray-500">Space Needed</span>
+                                <div class="flex">
+                                    <i class="fa fa-home text-secondary"></i>
+                                    <i class="fa fa-home-o text-gray-300"></i>
+                                    <i class="fa fa-home-o text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Game Interface -->
+            <div id="game-interface" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <button id="back-to-selection" class="text-primary hover:text-primary-dark flex items-center transition-all-300">
+                        <i class="fa fa-arrow-left mr-2"></i> Back to Selection
+                    </button>
+                    <div class="text-center">
+                        <h2 id="game-pet-name" class="text-2xl font-bold text-dark">My Virtual Pet</h2>
+                        <p id="game-pet-type" class="text-gray-600">Cat</p>
+                    </div>
+                    <div class="w-12"></div> <!-- Spacer -->
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="flex flex-col md:flex-row">
+                        <!-- Left side - Pet and status -->
+                        <div class="md:w-1/2 p-6 flex flex-col items-center">
+                            <div class="relative mb-6">
+                                <div id="pet-avatar" class="w-48 h-48 rounded-full overflow-hidden border-4 border-primary shadow-lg">
+                                    <img src="https://search.pstatic.net/single_group/31923915/2167422533~tplv-be4g95zd3k-image.image?rk3s=200322&x-expires=1780311492&x-signature=2l2VYGq48m34GzG6c9Yl2%2BM0WYQ%3D" alt="Pet Avatar" class="w-full h-full object-cover">
+                                </div>
+                                <div id="pet-mood" class="absolute -top-2 -right-2 bg-accent text-white rounded-full w-12 h-12 flex items-center justify-center shadow-md">
+                                    <i class="fa fa-smile-o text-xl"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="w-full mb-6">
+                                <h3 class="text-lg font-semibold text-dark mb-4">Pet Status</h3>
+                                
+                                <!-- Hunger -->
+                                <div class="mb-4">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium text-gray-500">Hunger</span>
+                                        <span id="hunger-value" class="text-sm font-medium text-gray-700">75%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                        <div id="hunger-bar" class="bg-primary h-2.5 rounded-full progress-bar" style="width: 75%"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Happiness -->
+                                <div class="mb-4">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium text-gray-500">Happiness</span>
+                                        <span id="happiness-value" class="text-sm font-medium text-gray-700">50%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                        <div id="happiness-bar" class="bg-accent h-2.5 rounded-full progress-bar" style="width: 50%"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Health -->
+                                <div class="mb-4">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium text-gray-500">Health</span>
+                                        <span id="health-value" class="text-sm font-medium text-gray-700">90%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                        <div id="health-bar" class="bg-secondary h-2.5 rounded-full progress-bar" style="width: 90%"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Hygiene -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium text-gray-500">Hygiene</span>
+                                        <span id="hygiene-value" class="text-sm font-medium text-gray-700">60%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                        <div id="hygiene-bar" class="bg-blue-500 h-2.5 rounded-full progress-bar" style="width: 60%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="w-full">
+                                <h3 class="text-lg font-semibold text-dark mb-4">Day Progress</h3>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                                    <div id="day-progress" class="bg-purple-500 h-2.5 rounded-full progress-bar" style="width: 0%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>Morning</span>
+                                    <span>Afternoon</span>
+                                    <span>Evening</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right side - Actions and events -->
+                        <div class="md:w-1/2 bg-gray-50 p-6">
+                            <h3 class="text-lg font-semibold text-dark mb-4">Your Day</h3>
+                            
+                            <div id="event-container" class="bg-white rounded-lg border border-gray-200 p-4 h-64 overflow-y-auto mb-6">
+                                <p class="text-gray-500 text-center italic">Start your day by taking care of your pet...</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <button class="game-action bg-white border border-primary text-primary hover:bg-primary hover:text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center" data-action="feed">
+                                    <i class="fa fa-cutlery mr-2"></i> Feed
+                                </button>
+                                <button class="game-action bg-white border border-accent text-accent hover:bg-accent hover:text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center" data-action="play">
+                                    <i class="fa fa-gamepad mr-2"></i> Play
+                                </button>
+                                <button class="game-action bg-white border border-secondary text-secondary hover:bg-secondary hover:text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center" data-action="health">
+                                    <i class="fa fa-medkit mr-2"></i> Health Check
+                                </button>
+                                <button class="game-action bg-white border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center" data-action="groom">
+                                    <i class="fa fa-shower mr-2"></i> Groom
+                                </button>
+                            </div>
+                            
+                            <div class="mt-6">
+                                <button id="end-day" class="w-full bg-primary hover:bg-opacity-90 text-white font-medium py-3 px-6 rounded-lg shadow-md transition-all-300 flex items-center justify-center">
+                                    <i class="fa fa-bed mr-2"></i> End Day
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pet Knowledge Page -->
+            <div id="pet-knowledge" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <button id="back-to-game" class="text-primary hover:text-primary-dark flex items-center transition-all-300">
+                        <i class="fa fa-arrow-left mr-2"></i> Back to Game
+                    </button>
+                    <div class="text-center">
+                        <h2 id="knowledge-pet-name" class="text-2xl font-bold text-dark">Pet Knowledge</h2>
+                        <p id="knowledge-pet-type" class="text-gray-600">Cat Care Basics</p>
+                    </div>
+                    <div class="w-12"></div> <!-- Spacer -->
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="flex flex-col md:flex-row">
+                        <!-- Left side - Pet image and basic info -->
+                        <div class="md:w-1/3 p-6">
+                            <div class="rounded-lg overflow-hidden mb-6">
+                                <img id="knowledge-pet-image" src="https://search.pstatic.net/single_group/31923915/2167422533~tplv-be4g95zd3k-image.image?rk3s=200322&x-expires=1780311492&x-signature=2l2VYGq48m34GzG6c9Yl2%2BM0WYQ%3D" alt="Pet" class="w-full h-auto">
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h3 class="text-lg font-semibold text-dark mb-3">Basic Information</h3>
+                                
+                                <div class="space-y-3">
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-500">Average Lifespan</h4>
+                                        <p id="avg-lifespan" class="font-medium">12-15 years</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-500">Average Size</h4>
+                                        <p id="avg-size" class="font-medium">8-10 inches tall, 18-24 inches long</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-500">Diet</h4>
+                                        <p id="diet" class="font-medium">Carnivorous - High protein diet</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-500">Exercise Needs</h4>
+                                        <p id="exercise-needs" class="font-medium">Moderate - Daily play sessions</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-500">Grooming Needs</h4>
+                                        <p id="grooming-needs" class="font-medium">Moderate - Weekly brushing</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right side - Detailed information -->
+                        <div class="md:w-2/3 p-6">
+                            <div class="mb-8">
+                                <h3 class="text-xl font-semibold text-dark mb-4">About This Pet</h3>
+                                <p id="pet-description" class="text-gray-700 leading-relaxed">
+                                    Cats are independent yet affectionate companions that make wonderful pets for various living situations. 
+                                    They are known for their agility, curiosity, and playful nature. Cats are generally low-maintenance 
+                                    compared to dogs but still require regular care and attention.
+                                </p>
+                            </div>
+                            
+                            <div class="mb-8">
+                                <h3 class="text-xl font-semibold text-dark mb-4">Care Requirements</h3>
+                                <ul id="care-requirements" class="list-disc list-inside space-y-2 text-gray-700">
+                                    <li>Provide a balanced, high-protein diet specifically formulated for cats</li>
+                                    <li>Ensure access to fresh water at all times</li>
+                                    <li>Regular veterinary check-ups and vaccinations</li>
+                                    <li>Daily play sessions to stimulate physical and mental health</li>
+                                    <li>Regular grooming to maintain healthy coat and skin</li>
+                                    <li>Provide a clean litter box in a quiet location</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="mb-8">
+                                <h3 class="text-xl font-semibold text-dark mb-4">Common Health Issues</h3>
+                                <ul id="health-issues" class="list-disc list-inside space-y-2 text-gray-700">
+                                    <li>Dental disease</li>
+                                    <li>Obesity</li>
+                                    <li>Diabetes</li>
+                                    <li>Chronic kidney disease</li>
+                                    <li>Hyperthyroidism</li>
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <h3 class="text-xl font-semibold text-dark mb-4">Behavioral Traits</h3>
+                                <ul id="behavioral-traits" class="list-disc list-inside space-y-2 text-gray-700">
+                                    <li>Independent nature but can form strong bonds with owners</li>
+                                    <li>Territorial behavior, may mark their space</li>
+                                    <li>Natural hunters, may exhibit play aggression</li>
+                                    <li>Need for vertical spaces to climb and perch</li>
+                                    <li>Communication through vocalizations, body language, and scent marking</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="mt-8 flex justify-end">
+                                <button id="proceed-to-quiz" class="bg-primary hover:bg-opacity-90 text-white font-medium py-3 px-6 rounded-lg shadow-md transition-all-300 flex items-center">
+                                    <span>Take Knowledge Quiz</span>
+                                    <i class="fa fa-arrow-right ml-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quiz Page -->
+        <section id="quiz" class="page">
+            <div class="text-center mb-12">
+                <h1 class="text-3xl md:text-4xl font-bold text-dark mb-4">Pet Care Knowledge Test</h1>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Test your knowledge about caring for different types of pets. Pass the quiz to see personalized pet recommendations.
+                </p>
+            </div>
+            
+            <!-- Quiz Category Selection -->
+            <div id="quiz-selection" class="mb-16">
+                <h2 class="text-2xl font-semibold text-dark mb-6 text-center">Choose a Pet Category</h2>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cat Quiz -->
+                    <div class="quiz-category bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover cursor-pointer" data-quiz-type="cat">
+                        <div class="relative">
+                            <img src="https://img1.baidu.com/it/u=3693588075,3373223347&fm=253&app=138&f=JPEG?w=800&h=1067" alt="Cat Quiz" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                                <h3 class="text-xl font-bold text-white">Cat Care Quiz</h3>
+                                <p class="text-white text-opacity-80">Test your knowledge about caring for cats</p>
+                            </div>
+                        </div>
+                        <div class="p-4 flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-500">10 Questions</span>
+                            <span class="text-sm font-medium text-primary">Pass Score: 80%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Dog Quiz -->
+                    <div class="quiz-category bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover cursor-pointer" data-quiz-type="dog">
+                        <div class="relative">
+                            <img src="https://img2.baidu.com/it/u=3625321767,2747224517&fm=253&app=138&f=JPEG?w=800&h=1200" alt="Dog Quiz" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                                <h3 class="text-xl font-bold text-white">Dog Care Quiz</h3>
+                                <p class="text-white text-opacity-80">Test your knowledge about caring for dogs</p>
+                            </div>
+                        </div>
+                        <div class="p-4 flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-500">10 Questions</span>
+                            <span class="text-sm font-medium text-primary">Pass Score: 80%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Rabbit Quiz -->
+                    <div class="quiz-category bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover cursor-pointer" data-quiz-type="rabbit">
+                        <div class="relative">
+                            <img src="https://img2.baidu.com/it/u=1328107326,1189898376&fm=253&app=138&f=JPEG?w=800&h=800" alt="Rabbit Quiz" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                                <h3 class="text-xl font-bold text-white">Rabbit Care Quiz</h3>
+                                <p class="text-white text-opacity-80">Test your knowledge about caring for rabbits</p>
+                            </div>
+                        </div>
+                        <div class="p-4 flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-500">10 Questions</span>
+                            <span class="text-sm font-medium text-primary">Pass Score: 80%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Turtle Quiz -->
+                    <div class="quiz-category bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover cursor-pointer" data-quiz-type="turtle">
+                        <div class="relative">
+                            <img src="https://pic.rmb.bdstatic.com/bjh/9adcb96a0a2bee832e7da0fadc0c3aa72780.jpeg@h_1280" alt="Turtle Quiz" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                                <h3 class="text-xl font-bold text-white">Turtle Care Quiz</h3>
+                                <p class="text-white text-opacity-80">Test your knowledge about caring for turtles</p>
+                            </div>
+                        </div>
+                        <div class="p-4 flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-500">10 Questions</span>
+                            <span class="text-sm font-medium text-primary">Pass Score: 80%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Lizard Quiz -->
+                    <div class="quiz-category bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover cursor-pointer" data-quiz-type="lizard">
+                        <div class="relative">
+                            <img src="https://img1.baidu.com/it/u=3822185929,2312647591&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=666" alt="Lizard Quiz" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                                <h3 class="text-xl font-bold text-white">Lizard Care Quiz</h3>
+                                <p class="text-white text-opacity-80">Test your knowledge about caring for lizards</p>
+                            </div>
+                        </div>
+                        <div class="p-4 flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-500">10 Questions</span>
+                            <span class="text-sm font-medium text-primary">Pass Score: 80%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Small Mammal Quiz -->
+                    <div class="quiz-category bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover cursor-pointer" data-quiz-type="small-mammal">
+                        <div class="relative">
+                            <img src="https://img1.baidu.com/it/u=1891785203,2343964172&fm=253&fmt=auto&app=138&f=JPEG?w=800&h=1127" alt="Small Mammal Quiz" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                                <h3 class="text-xl font-bold text-white">Small Mammal Quiz</h3>
+                                <p class="text-white text-opacity-80">Test your knowledge about small mammals</p>
+                            </div>
+                        </div>
+                        <div class="p-4 flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-500">10 Questions</span>
+                            <span class="text-sm font-medium text-primary">Pass Score: 80%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quiz Interface -->
+            <div id="quiz-interface" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <button id="back-to-quiz-selection" class="text-primary hover:text-primary-dark flex items-center transition-all-300">
+                        <i class="fa fa-arrow-left mr-2"></i> Back to Categories
+                    </button>
+                    <div class="text-center">
+                        <h2 id="quiz-title" class="text-2xl font-bold text-dark">Cat Care Quiz</h2>
+                        <p id="quiz-progress" class="text-gray-600">Question 1 of 10</p>
+                    </div>
+                    <div class="w-12"></div> <!-- Spacer -->
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden p-6">
+                    <div id="question-container" class="mb-8">
+                        <h3 id="question-text" class="text-xl font-semibold text-dark mb-6">What is the average lifespan of an indoor cat?</h3>
+                        
+                        <div id="options-container" class="space-y-3">
+                            <div class="quiz-option border border-gray-200 rounded-lg p-4 cursor-pointer" data-option="A">
+                                <span class="font-medium mr-2">A.</span>
+                                <span>5-8 years</span>
+                            </div>
+                            
+                            <div class="quiz-option border border-gray-200 rounded-lg p-4 cursor-pointer" data-option="B">
+                                <span class="font-medium mr-2">B.</span>
+                                <span>12-15 years</span>
+                            </div>
+                            
+                            <div class="quiz-option border border-gray-200 rounded-lg p-4 cursor-pointer" data-option="C">
+                                <span class="font-medium mr-2">C.</span>
+                                <span>18-20 years</span>
+                            </div>
+                            
+                            <div class="quiz-option border border-gray-200 rounded-lg p-4 cursor-pointer" data-option="D">
+                                <span class="font-medium mr-2">D.</span>
+                                <span>20-25 years</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="feedback-container" class="hidden mb-8">
+                        <div id="correct-feedback" class="bg-green-50 border border-green-200 rounded-lg p-4 hidden">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <i class="fa fa-check-circle text-green-500 text-xl"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-lg font-medium text-green-800">Correct!</h3>
+                                    <p id="correct-explanation" class="mt-1 text-green-700">
+                                        Indoor cats typically live 12-15 years, while outdoor cats have a shorter lifespan of 2-5 years.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="incorrect-feedback" class="bg-red-50 border border-red-200 rounded-lg p-4 hidden">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <i class="fa fa-times-circle text-red-500 text-xl"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-lg font-medium text-red-800">Not Quite Right</h3>
+                                    <p id="incorrect-explanation" class="mt-1 text-red-700">
+                                        The correct answer is B. Indoor cats typically live 12-15 years, while outdoor cats have a shorter lifespan of 2-5 years.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between">
+                        <button id="prev-question" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <i class="fa fa-arrow-left mr-2"></i> Previous
+                        </button>
+                        
+                        <button id="next-question" class="bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center hidden">
+                            Next
+                            <i class="fa fa-arrow-right ml-2"></i>
+                        </button>
+                        
+                        <button id="submit-quiz" class="bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center hidden">
+                            Submit Quiz
+                            <i class="fa fa-check ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quiz Results -->
+            <div id="quiz-results" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <button id="back-to-quiz-from-results" class="text-primary hover:text-primary-dark flex items-center transition-all-300">
+                        <i class="fa fa-arrow-left mr-2"></i> Back to Quiz
+                    </button>
+                    <div class="text-center">
+                        <h2 id="results-title" class="text-2xl font-bold text-dark">Quiz Results</h2>
+                        <p id="results-subtitle" class="text-gray-600">Cat Care Quiz</p>
+                    </div>
+                    <div class="w-12"></div> <!-- Spacer -->
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden p-6">
+                    <div class="text-center mb-8">
+                        <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-primary bg-opacity-10 mb-4">
+                            <span id="score-percentage" class="text-3xl font-bold text-primary">80%</span>
+                        </div>
+                        
+                        <h3 id="result-status" class="text-2xl font-semibold text-dark mb-2">Congratulations!</h3>
+                        <p id="result-message" class="text-gray-600 max-w-lg mx-auto">
+                            You have successfully passed the Cat Care Quiz. You're ready to learn about cats available for adoption!
+                        </p>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-6 mb-8">
+                        <h4 class="text-lg font-semibold text-dark mb-4">Quiz Summary</h4>
+                        
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-gray-700">Total Questions</span>
+                            <span class="font-medium">10</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-gray-700">Correct Answers</span>
+                            <span id="correct-answers" class="font-medium text-secondary">8</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Incorrect Answers</span>
+                            <span id="incorrect-answers" class="font-medium text-red-500">2</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <button id="retry-quiz" class="bg-white border border-primary text-primary hover:bg-primary hover:text-white font-medium py-3 px-6 rounded-lg shadow-sm transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-refresh mr-2"></i> Retry Quiz
+                        </button>
+                        
+                        <button id="view-recommendations" class="bg-primary hover:bg-opacity-90 text-white font-medium py-3 px-6 rounded-lg shadow-md transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-paw mr-2"></i> View Pet Recommendations
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recommendations Page -->
+        <section id="recommendations" class="page">
+            <div class="text-center mb-12">
+                <h1 class="text-3xl md:text-4xl font-bold text-dark mb-4">Pet Recommendations</h1>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Based on your simulation experience and quiz results, here are some pets that might be a perfect match for you.
+                </p>
+            </div>
+            
+            <!-- Filter Options -->
+            <div class="bg-white rounded-xl shadow-md p-6 mb-12">
+                <h2 class="text-xl font-semibold text-dark mb-4">Filter Options</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Pet Type</label>
+                        <select id="pet-type-filter" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="all">All Types</option>
+                            <option value="cat">Cats</option>
+                            <option value="dog">Dogs</option>
+                            <option value="rabbit">Rabbits</option>
+                            <option value="turtle">Turtles</option>
+                            <option value="lizard">Lizards</option>
+                            <option value="small-mammal">Small Mammals</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Care Level</label>
+                        <select id="care-level-filter" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="all">All Levels</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Age</label>
+                        <select id="age-filter" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="all">All Ages</option>
+                            <option value="baby">Baby (0-1 year)</option>
+                            <option value="young">Young (1-3 years)</option>
+                            <option value="adult">Adult (3-8 years)</option>
+                            <option value="senior">Senior (8+ years)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recommended Pets -->
+            <div id="recommended-pets" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Cat Recommendation 1 -->
+                <div class="pet-recommendation bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover" data-pet-type="cat" data-care-level="medium" data-age="young">
+                    <div class="relative">
+                        <img src="https://qcloud.dpfile.com/pc/ZvpV386q-UlDHP8j8toFLw7TtYtokXcUi7zpVZFH6H0llHYhj0p-pkM0f8Jv7b4e.jpg" alt="Cat" class="w-full h-56 object-cover">
+                        <div class="absolute top-4 right-4 bg-primary text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                            High Match
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-dark">Oliver</h3>
+                                <p class="text-gray-500">2 years old • Male</p>
+                            </div>
+                            <div class="bg-secondary bg-opacity-10 text-secondary text-xs font-bold px-2.5 py-1 rounded-full">
+                                Medium Care
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-600 mb-4">
+                            Oliver is a friendly and playful cat who loves attention. He's great with kids and other pets. 
+                            He enjoys playing with toys and cuddling up for naps.
+                        </p>
+                        
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Good with kids</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Good with other pets</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Playful</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Affectionate</span>
+                        </div>
+                        
+                        <button class="adopt-button w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-heart mr-2"></i> Adopt Oliver
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Dog Recommendation 1 -->
+                <div class="pet-recommendation bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover" data-pet-type="dog" data-care-level="high" data-age="baby">
+                    <div class="relative">
+                        <img src="https://img1.baidu.com/it/u=3657312610,406056446&fm=253&app=138&f=JPEG?w=800&h=1067" alt="Dog" class="w-full h-56 object-cover">
+                        <div class="absolute top-4 right-4 bg-primary text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                            High Match
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-dark">Bella</h3>
+                                <p class="text-gray-500">6 months old • Female</p>
+                            </div>
+                            <div class="bg-red-100 text-red-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                                High Care
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-600 mb-4">
+                            Bella is an energetic and loving puppy who needs an active family. She's very intelligent 
+                            and eager to learn. She gets along well with children and other dogs.
+                        </p>
+                        
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Good with kids</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Good with other dogs</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Energetic</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Trainable</span>
+                        </div>
+                        
+                        <button class="adopt-button w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-heart mr-2"></i> Adopt Bella
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Rabbit Recommendation 1 -->
+                <div class="pet-recommendation bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover" data-pet-type="rabbit" data-care-level="medium" data-age="adult">
+                    <div class="relative">
+                        <img src="https://pics5.baidu.com/feed/4ec2d5628535e5dd1046eb5f22e165e1cf1b62fa.jpeg@f_auto?token=73b8bb6ed373b8798af480ef201831d8" alt="Rabbit" class="w-full h-56 object-cover">
+                        <div class="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                            Medium Match
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-dark">Thumper</h3>
+                                <p class="text-gray-500">4 years old • Male</p>
+                            </div>
+                            <div class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                                Medium Care
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-600 mb-4">
+                            Thumper is a gentle and social rabbit who loves to be around people. He's litter-trained 
+                            and enjoys playing with toys. He would do best in a home with older children.
+                        </p>
+                        
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Good with older kids</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Litter-trained</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Gentle</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Social</span>
+                        </div>
+                        
+                        <button class="adopt-button w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-heart mr-2"></i> Adopt Thumper
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Turtle Recommendation 1 -->
+                <div class="pet-recommendation bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover" data-pet-type="turtle" data-care-level="low" data-age="adult">
+                    <div class="relative">
+                        <img src="https://b0.bdstatic.com/ugc/zQguon0GJmLs9ABJfjuVKQ8215e80a83e6cec61025bcebea1fb028.jpg" alt="Turtle" class="w-full h-56 object-cover">
+                        <div class="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                            Medium Match
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-dark">Shelly</h3>
+                                <p class="text-gray-500">5 years old • Female</p>
+                            </div>
+                            <div class="bg-green-100 text-green-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                                Low Care
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-600 mb-4">
+                            Shelly is a calm and easygoing turtle who makes a great pet for beginners. She's used to 
+                            being handled and has a healthy appetite. She comes with her tank and accessories.
+                        </p>
+                        
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Beginner-friendly</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Easy to care for</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Calm</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Comes with setup</span>
+                        </div>
+                        
+                        <button class="adopt-button w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-heart mr-2"></i> Adopt Shelly
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Lizard Recommendation 1 -->
+                <div class="pet-recommendation bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover" data-pet-type="lizard" data-care-level="high" data-age="young">
+                    <div class="relative">
+                        <img src="https://img1.baidu.com/it/u=1505583300,1002619884&fm=253&fmt=auto&app=138&f=JPEG?w=800&h=1560" alt="Lizard" class="w-full h-56 object-cover">
+                        <div class="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                            Medium Match
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-dark">Spike</h3>
+                                <p class="text-gray-500">1 year old • Male</p>
+                            </div>
+                            <div class="bg-red-100 text-red-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                                High Care
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-600 mb-4">
+                            Spike is a beautiful bearded dragon who is full of personality. He's used to being handled 
+                            and enjoys exploring his environment. He requires a specific habitat and diet.
+                        </p>
+                        
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Handleable</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Active</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Specific habitat needs</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Interesting to observe</span>
+                        </div>
+                        
+                        <button class="adopt-button w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-heart mr-2"></i> Adopt Spike
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Small Mammal Recommendation 1 -->
+                <div class="pet-recommendation bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover" data-pet-type="small-mammal" data-care-level="low" data-age="baby">
+                    <div class="relative">
+                        <img src="https://copyright.bdstatic.com/vcg/creative/214640754ad7a811665c62fb79cb95c3.jpg@c_1,w_1826,h_1217,x_0,y_0" alt="Hamster" class="w-full h-56 object-cover">
+                        <div class="absolute top-4 right-4 bg-primary text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                            High Match
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-dark">Nibbles</h3>
+                                <p class="text-gray-500">3 months old • Male</p>
+                            </div>
+                            <div class="bg-green-100 text-green-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                                Low Care
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-600 mb-4">
+                            Nibbles is an adorable and energetic hamster who loves to play. He's very active and 
+                            enjoys running on his wheel and exploring tunnels. He's a great pet for someone with limited space.
+                        </p>
+                        
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Low space requirements</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Easy to care for</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Active</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Fun to watch</span>
+                        </div>
+                        
+                        <button class="adopt-button w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-heart mr-2"></i> Adopt Nibbles
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Cat Recommendation 2 -->
+                <div class="pet-recommendation bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover" data-pet-type="cat" data-care-level="medium" data-age="senior">
+                    <div class="relative">
+                        <img src="https://qcloud.dpfile.com/pc/K8CqGo9wHqjs6DVwJE1ENR1v2-_q3ZmZ-gtN8BBgrRO3yqOj4azRZ3bCaSD5pWf7.jpg" alt="Cat" class="w-full h-56 object-cover">
+                        <div class="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                            Medium Match
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-dark">Mittens</h3>
+                                <p class="text-gray-500">9 years old • Female</p>
+                            </div>
+                            <div class="bg-secondary bg-opacity-10 text-secondary text-xs font-bold px-2.5 py-1 rounded-full">
+                                Medium Care
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-600 mb-4">
+                            Mittens is a gentle senior cat looking for a quiet home. She enjoys napping in sunny spots 
+                            and gentle petting. She's litter-trained and gets along well with other calm pets.
+                        </p>
+                        
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Calm</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Litter-trained</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Senior</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Low energy</span>
+                        </div>
+                        
+                        <button class="adopt-button w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-heart mr-2"></i> Adopt Mittens
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Dog Recommendation 2 -->
+                <div class="pet-recommendation bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover" data-pet-type="dog" data-care-level="medium" data-age="adult">
+                    <div class="relative">
+                        <img src="https://img2.baidu.com/it/u=1376633739,1577276047&fm=253&app=138&f=JPEG?w=800&h=1067" alt="Dog" class="w-full h-56 object-cover">
+                        <div class="absolute top-4 right-4 bg-primary text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                            High Match
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-dark">Max</h3>
+                                <p class="text-gray-500">5 years old • Male</p>
+                            </div>
+                            <div class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                                Medium Care
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-600 mb-4">
+                            Max is a well-behaved adult dog who loves going for walks and playing fetch. He's house-trained 
+                            and knows basic commands. He would make a great companion for an active individual or family.
+                        </p>
+                        
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">House-trained</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Knows commands</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Good with kids</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Active</span>
+                        </div>
+                        
+                        <button class="adopt-button w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-heart mr-2"></i> Adopt Max
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Rabbit Recommendation 2 -->
+                <div class="pet-recommendation bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover" data-pet-type="rabbit" data-care-level="medium" data-age="baby">
+                    <div class="relative">
+                        <img src="https://pics6.baidu.com/feed/4610b912c8fcc3cebd521c631ae13285d53f2006.jpeg@f_auto?token=207c127ecf435552a67733ac16a58913" alt="Rabbit" class="w-full h-56 object-cover">
+                        <div class="absolute top-4 right-4 bg-primary text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                            High Match
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-dark">Snowball</h3>
+                                <p class="text-gray-500">8 weeks old • Female</p>
+                            </div>
+                            <div class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                                Medium Care
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-600 mb-4">
+                            Snowball is an adorable baby rabbit with soft white fur. She's very playful and curious, 
+                            always exploring her surroundings. She's being litter-trained and gets along well with other rabbits.
+                        </p>
+                        
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Baby</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Playful</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Litter-training</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Social</span>
+                        </div>
+                        
+                        <button class="adopt-button w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-heart mr-2"></i> Adopt Snowball
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Small Mammal Recommendation 2 -->
+                <div class="pet-recommendation bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover" data-pet-type="small-mammal" data-care-level="low" data-age="young">
+                    <div class="relative">
+                        <img src="https://pics1.baidu.com/feed/38dbb6fd5266d0166da7f881c16e040834fa35b5.jpeg@f_auto?token=17bc339dd08987ce2c7db62374ba3d1a" alt="Hamster" class="w-full h-56 object-cover">
+                        <div class="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                            Medium Match
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-dark">Cinnamon</h3>
+                                <p class="text-gray-500">6 months old • Female</p>
+                            </div>
+                            <div class="bg-green-100 text-green-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                                Low Care
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-600 mb-4">
+                            Cinnamon is a beautiful cinnamon-colored hamster with a calm personality. She enjoys running 
+                            on her wheel and exploring her enclosure. She's easy to care for and would make a great first pet.
+                        </p>
+                        
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Calm</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Easy to care for</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">First pet friendly</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Nocturnal</span>
+                        </div>
+                        
+                        <button class="adopt-button w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-heart mr-2"></i> Adopt Cinnamon
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Lizard Recommendation 2 -->
+                <div class="pet-recommendation bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover" data-pet-type="lizard" data-care-level="high" data-age="adult">
+                    <div class="relative">
+                        <img src="https://img2.baidu.com/it/u=687301708,3491702984&fm=253&fmt=auto&app=138&f=JPEG?w=649&h=500" alt="Lizard" class="w-full h-56 object-cover">
+                        <div class="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                            Low Match
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-dark">Zilla</h3>
+                                <p class="text-gray-500">4 years old • Male</p>
+                            </div>
+                            <div class="bg-red-100 text-red-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                                High Care
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-600 mb-4">
+                            Zilla is a striking green iguana who requires an experienced owner. He needs a large enclosure 
+                            with proper heating and lighting. He's not handled often and prefers to be observed rather than touched.
+                        </p>
+                        
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Experienced owner only</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Large enclosure needed</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Observational pet</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Specific care needs</span>
+                        </div>
+                        
+                        <button class="adopt-button w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-heart mr-2"></i> Adopt Zilla
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Turtle Recommendation 2 -->
+                <div class="pet-recommendation bg-white rounded-xl shadow-md overflow-hidden transition-all-300 pet-card-hover" data-pet-type="turtle" data-care-level="low" data-age="young">
+                    <div class="relative">
+                        <img src="https://copyright.bdstatic.com/vcg/creative/43871b3790e07ac3915b2707ce206e78.jpg@wm_1,k_cGljX2JqaHdhdGVyLmpwZw==" alt="Turtle" class="w-full h-56 object-cover">
+                        <div class="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                            Medium Match
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-dark">Michelangelo</h3>
+                                <p class="text-gray-500">2 years old • Male</p>
+                            </div>
+                            <div class="bg-green-100 text-green-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                                Low Care
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-600 mb-4">
+                            Michelangelo is an active young turtle who loves swimming in his tank. He's easy to care for 
+                            and has a healthy appetite. He comes with a proper tank setup including UVB lighting and heater.
+                        </p>
+                        
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Active</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Easy to care for</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Comes with setup</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Water-loving</span>
+                        </div>
+                        
+                        <button class="adopt-button w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-heart mr-2"></i> Adopt Michelangelo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between">
+                <div class="mb-8 md:mb-0">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <i class="fa fa-paw text-primary text-2xl"></i>
+                        <span class="text-xl font-bold">PetAdoptSim</span>
+                    </div>
+                    <p class="text-gray-400 max-w-xs">
+                        Helping people find their perfect pet match through interactive experiences and education.
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-400 hover:text-primary transition-all-300" data-page="landing">Home</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-primary transition-all-300" data-page="simulation">Pet Simulation</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-primary transition-all-300" data-page="quiz">Care Quiz</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-primary transition-all-300" data-page="recommendations">Recommendations</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Resources</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-400 hover:text-primary transition-all-300">Pet Care Guides</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-primary transition-all-300">Adoption Tips</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-primary transition-all-300">Veterinary Resources</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-primary transition-all-300">Pet Behavior</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Contact</h3>
+                        <ul class="space-y-2">
+                            <li class="flex items-center">
+                                <i class="fa fa-envelope text-primary mr-2"></i>
+                                <a href="mailto:info@petadoptsim.com" class="text-gray-400 hover:text-primary transition-all-300">info@petadoptsim.com</a>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fa fa-phone text-primary mr-2"></i>
+                                <span class="text-gray-400">+1 (555) 123-4567</span>
+                            </li>
+                        </ul>
+                        
+                        <div class="flex space-x-4 mt-4">
+                            <a href="#" class="text-gray-400 hover:text-primary transition-all-300">
+                                <i class="fa fa-facebook"></i>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-primary transition-all-300">
+                                <i class="fa fa-twitter"></i>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-primary transition-all-300">
+                                <i class="fa fa-instagram"></i>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-primary transition-all-300">
+                                <i class="fa fa-pinterest"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 text-sm mb-4 md:mb-0">
+                    &copy; 2025 PetAdoptSim. All rights reserved.
+                </p>
+                
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-primary transition-all-300 text-sm">Privacy Policy</a>
+                    <a href="#" class="text-gray-400 hover:text-primary transition-all-300 text-sm">Terms of Service</a>
+                    <a href="#" class="text-gray-400 hover:text-primary transition-all-300 text-sm">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Adoption Modal -->
+    <div id="adoption-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-dark">Adopt <span id="modal-pet-name">Oliver</span>?</h3>
+                    <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-6">
+                    <p class="text-gray-600 mb-4">
+                        Are you sure you want to adopt <span id="modal-pet-name-2">Oliver</span>? This will take you to the adoption application process.
+                    </p>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-medium text-dark mb-2">Next Steps:</h4>
+                        <ol class="list-decimal list-inside space-y-1 text-gray-600 text-sm">
+                            <li>Complete the adoption application form</li>
+                            <li>Schedule a meet-and-greet with the pet</li>
+                            <li>Home visit (if required)</li>
+                            <li>Final approval and adoption fee</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button id="cancel-adoption" class="flex-1 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg shadow-sm transition-all-300">
+                        Cancel
+                    </button>
+                    
+                    <button id="confirm-adoption" class="flex-1 bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-md transition-all-300">
+                        Confirm Adoption
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
+            <div class="p-6 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+                    <i class="fa fa-check text-green-500 text-2xl"></i>
+                </div>
+                
+                <h3 class="text-2xl font-bold text-dark mb-2">Congratulations!</h3>
+                <p class="text-gray-600 mb-6">
+                    You've started the adoption process for <span id="success-pet-name">Oliver</span>. 
+                    We'll be in touch soon to schedule a meet-and-greet!
+                </p>
+                
+                <button id="close-success-modal" class="w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg shadow-md transition-all-300">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Page Navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile Menu Toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            mobileMenuButton.addEventListener('click', function() {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            // Navigation Links
+            const navLinks = document.querySelectorAll('.nav-link, [data-page]');
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const targetPage = this.getAttribute('data-page');
+                    if (targetPage) {
+                        navigateToPage(targetPage);
+                    }
+                });
+            });
+            
+            function navigateToPage(pageId) {
+                // Hide all pages
+                document.querySelectorAll('.page').forEach(page => {
+                    page.classList.remove('active');
+                });
+                
+                // Show target page
+                document.getElementById(pageId).classList.add('active');
+                
+                // Close mobile menu if open
+                mobileMenu.classList.add('hidden');
+                
+                // Scroll to top
+                window.scrollTo(0, 0);
+            }
+            
+            // Pet Simulation Game
+            const petCards = document.querySelectorAll('.pet-card');
+            const petSelection = document.getElementById('pet-selection');
+            const gameInterface = document.getElementById('game-interface');
+            const backToSelection = document.getElementById('back-to-selection');
+            const gamePetType = document.getElementById('game-pet-type');
+            const petAvatar = document.getElementById('pet-avatar').querySelector('img');
+            const petMood = document.getElementById('pet-mood');
+            
+            // Game Stats
+            let gameStats = {
+                hunger: 75,
+                happiness: 50,
+                health: 90,
+                hygiene: 60,
+                dayProgress: 0
+            };
+            
+            // Pet Types Data
+            const petTypes = {
+                cat: {
+                    name: 'Cat',
+                    image: 'https://qcloud.dpfile.com/pc/dlFBg_0rL99HbRNH2pLwf7baX97Qus6XtQc_lOaCP8O1NpX6wMdvSN80YpcTbMKw.jpg',
+                    description: 'Cats are independent yet affectionate companions that make wonderful pets for various living situations. They are known for their agility, curiosity, and playful nature. Cats are generally low-maintenance compared to dogs but still require regular care and attention.',
+                    lifespan: '12-15 years',
+                    size: '8-10 inches tall, 18-24 inches long',
+                    diet: 'Carnivorous - High protein diet',
+                    exercise: 'Moderate - Daily play sessions',
+                    grooming: 'Moderate - Weekly brushing',
+                    careRequirements: [
+                        'Provide a balanced, high-protein diet specifically formulated for cats',
+                        'Ensure access to fresh water at all times',
+                        'Regular veterinary check-ups and vaccinations',
+                        'Daily play sessions to stimulate physical and mental health',
+                        'Regular grooming to maintain healthy coat and skin',
+                        'Provide a clean litter box in a quiet location'
+                    ],
+                    healthIssues: [
+                        'Dental disease',
+                        'Obesity',
+                        'Diabetes',
+                        'Chronic kidney disease',
+                        'Hyperthyroidism'
+                    ],
+                    behavioralTraits: [
+                        'Independent nature but can form strong bonds with owners',
+                        'Territorial behavior, may mark their space',
+                        'Natural hunters, may exhibit play aggression',
+                        'Need for vertical spaces to climb and perch',
+                        'Communication through vocalizations, body language, and scent marking'
+                    ]
+                },
+                dog: {
+                    name: 'Dog',
+                    image: 'https://img0.baidu.com/it/u=4034007437,2854443373&fm=253&app=138&f=JPEG?w=800&h=1200',
+                    description: 'Dogs are loyal, social animals that thrive on human companionship. They come in a wide variety of breeds, each with unique characteristics and care requirements. Dogs require regular exercise, training, and socialization to be happy and healthy members of the family.',
+                    lifespan: '10-13 years (varies by breed)',
+                    size: 'Varies greatly by breed - 6-34 inches tall at shoulder',
+                    diet: 'Omnivorous - Balanced diet with protein, carbohydrates, and fats',
+                    exercise: 'High - Daily walks, playtime, and mental stimulation',
+                    grooming: 'Varies by breed - Weekly to daily brushing',
+                    careRequirements: [
+                        'Regular exercise to maintain physical and mental health',
+                        'Balanced diet appropriate for age, size, and activity level',
+                        'Regular veterinary check-ups, vaccinations, and preventive care',
+                        'Training and socialization from a young age',
+                        'Regular grooming based on coat type',
+                        'Safe and comfortable living environment'
+                    ],
+                    healthIssues: [
+                        'Hip and elbow dysplasia',
+                        'Obesity',
+                        'Dental disease',
+                        'Ear infections',
+                        'Allergies'
+                    ],
+                    behavioralTraits: [
+                        'Social animals that thrive on human interaction',
+                        'Pack mentality, may see family as their pack',
+                        'Varied energy levels depending on breed',
+                        'Can be trained for various tasks and behaviors',
+                        'Communication through barking, body language, and facial expressions'
+                    ]
+                },
+                rabbit: {
+                    name: 'Rabbit',
+                    image: 'https://pics6.baidu.com/feed/4610b912c8fcc3cebd521c631ae13285d53f2006.jpeg@f_auto?token=207c127ecf435552a67733ac16a58913',
+                    description: 'Rabbits are gentle, social creatures that can make wonderful pets for the right owner. They are intelligent animals that can be litter-trained and form strong bonds with their human companions. Rabbits require specific care to ensure their health and happiness.',
+                    lifespan: '8-12 years',
+                    size: 'Varies by breed - 8-20 inches long',
+                    diet: 'Herbivorous - High-fiber diet of hay, fresh vegetables, and limited pellets',
+                    exercise: 'Moderate - Daily supervised playtime outside the cage',
+                    grooming: 'Moderate - Weekly brushing, more frequent during shedding seasons',
+                    careRequirements: [
+                        'Unlimited access to fresh hay for digestive health',
+                        'Fresh vegetables daily (leafy greens, carrots, etc.)',
+                        'Limited amount of high-quality rabbit pellets',
+                        'Spacious enclosure with separate areas for sleeping, eating, and using the litter box',
+                        'Daily exercise outside the cage in a safe, supervised area',
+                        'Regular grooming to prevent hairballs and matting'
+                    ],
+                    healthIssues: [
+                        'Gastrointestinal stasis (life-threatening condition)',
+                        'Dental problems from overgrown teeth',
+                        'Ear mites',
+                        'Respiratory infections',
+                        'Flystrike (in outdoor rabbits)'
+                    ],
+                    behavioralTraits: [
+                        'Social animals that can become lonely without companionship',
+                        'Can be litter-trained like cats',
+                        'May display territorial behavior, especially unneutered males',
+                        'Communicate through body language, vocalizations, and thumping',
+                        'Natural chewers - need appropriate items to chew on'
+                    ]
+                },
+                turtle: {
+                    name: 'Turtle',
+                    image: 'https://qcloud.dpfile.com/pc/2WpLILRGg5arkbG36zo3A-kwwHxSVGX4Oe5ETpEgPKUPu-sWyOM5Vp-C07zrDsmD.jpg',
+                    description: 'Turtles are fascinating reptiles that make unique pets. They have specific habitat requirements and can live for a very long time, so owning a turtle is a long-term commitment. Turtles can be interesting to observe but generally do not enjoy being handled.',
+                    lifespan: '20-40 years (some species live longer)',
+                    size: 'Varies by species - 4-12 inches shell length',
+                    diet: 'Omnivorous - Commercial turtle pellets, vegetables, and occasional protein',
+                    exercise: 'Low - Swimming space and basking areas',
+                    grooming: 'Low - Occasional shell cleaning',
+                    careRequirements: [
+                        'Properly sized aquarium or enclosure with water and basking areas',
+                        'UVB lighting for calcium metabolism and overall health',
+                        'Heat lamp for basking area (temperature gradient)',
+                        'Clean water with filtration system',
+                        'Balanced diet appropriate for species and age',
+                        'Regular water changes and enclosure cleaning'
+                    ],
+                    healthIssues: [
+                        'Shell rot (fungal or bacterial infection)',
+                        'Respiratory infections',
+                        'Metabolic bone disease from lack of calcium or UVB',
+                        'Vitamin deficiencies',
+                        'Parasites'
+                    ],
+                    behavioralTraits: [
+                        'Solitary animals that do not require social interaction',
+                        'Spend time swimming and basking to regulate body temperature',
+                        'May become stressed with excessive handling',
+                        'Hibernate or brumate in winter (depending on species)',
+                        'Territorial, especially males in breeding season'
+                    ]
+                },
+                lizard: {
+                    name: 'Lizard',
+                    image: 'https://pixnio.com/free-images/2017/07/22/2017-07-22-13-17-25.jpg',
+                    description: 'Lizards are diverse reptiles that make interesting pets for experienced reptile owners. They come in a wide variety of sizes, colors, and temperaments. Lizards have specific environmental and dietary needs that must be met for them to thrive in captivity.',
+                    lifespan: '5-20 years (varies by species)',
+                    size: 'Varies greatly by species - 3 inches to 6 feet',
+                    diet: 'Varies by species - Insectivorous, herbivorous, or omnivorous',
+                    exercise: 'Moderate - Space to climb, bask, and explore',
+                    grooming: 'Low - Shedding assistance may be needed',
+                    careRequirements: [
+                        'Properly sized enclosure with appropriate substrate',
+                        'Temperature gradient with heat source',
+                        'UVB lighting for most species',
+                        'Humidity control specific to species requirements',
+                        'Diet appropriate for species (insects, vegetables, fruits, etc.)',
+                        'Regular enclosure cleaning and maintenance'
+                    ],
+                    healthIssues: [
+                        'Metabolic bone disease from calcium or UVB deficiency',
+                        'Respiratory infections from improper humidity/temperature',
+                        'Parasites',
+                        'Shedding problems',
+                        'Impaction from ingesting substrate'
+                    ],
+                    behavioralTraits: [
+                        'Varied temperaments from docile to aggressive',
+                        'Territorial behavior in some species',
+                        'Some species can be handled with care',
+                        'Basking behavior to regulate body temperature',
+                        'Defensive behaviors may include tail dropping, hissing, or biting'
+                    ]
+                },
+                'small-mammal': {
+                    name: 'Small Mammal',
+                    image: 'https://b0.bdstatic.com/334b715a4873271d84d7e843f5426951.jpg@h_1280',
+                    description: 'Small mammals such as hamsters, guinea pigs, and rats make popular pets due to their size and generally docile nature. Each type of small mammal has unique care requirements, but they all need proper housing, nutrition, and enrichment to live happy, healthy lives.',
+                    lifespan: '2-8 years (varies by species)',
+                    size: 'Varies by species - 2-12 inches long',
+                    diet: 'Varies by species - Commercial pellets, fresh vegetables, hay',
+                    exercise: 'High - Need space to run, climb, and explore',
+                    grooming: 'Low to moderate - Regular cage cleaning and occasional brushing',
+                    careRequirements: [
+                        'Spacious cage with appropriate bedding and enrichment items',
+                        'Species-specific diet with fresh food and water daily',
+                        'Regular cage cleaning to maintain hygiene',
+                        'Toys and activities to prevent boredom',
+                        'Social interaction (some species need same-species companionship)',
+                        'Regular health checks and veterinary care'
+                    ],
+                    healthIssues: [
+                        'Dental problems from overgrown teeth',
+                        'Respiratory infections',
+                        'GI stasis (especially in herbivorous species)',
+                        'Tumors (common in older small mammals)',
+                        'Parasites'
+                    ],
+                    behavioralTraits: [
+                        'Varied social needs - some are solitary, others need companions',
+                        'Nocturnal or crepuscular activity patterns',
+                        'Natural behaviors include burrowing, climbing, and foraging',
+                        'Can be tamed with gentle handling from a young age',
+                        'Communication through vocalizations, body language, and scent marking'
+                    ]
+                }
+            };
+            
+            // Game Actions
+            const gameActions = document.querySelectorAll('.game-action');
+            const eventContainer = document.getElementById('event-container');
+            const endDayButton = document.getElementById('end-day');
+            const petKnowledge = document.getElementById('pet-knowledge');
+            const backToGame = document.getElementById('back-to-game');
+            const proceedToQuiz = document.getElementById('proceed-to-quiz');
+            
+            // Pet Knowledge Elements
+            const knowledgePetType = document.getElementById('knowledge-pet-type');
+            const knowledgePetImage = document.getElementById('knowledge-pet-image');
+            const avgLifespan = document.getElementById('avg-lifespan');
+            const avgSize = document.getElementById('avg-size');
+            const diet = document.getElementById('diet');
+            const exerciseNeeds = document.getElementById('exercise-needs');
+            const groomingNeeds = document.getElementById('grooming-needs');
+            const petDescription = document.getElementById('pet-description');
+            const careRequirements = document.getElementById('care-requirements');
+            const healthIssues = document.getElementById('health-issues');
+            const behavioralTraits = document.getElementById('behavioral-traits');
+            
+            // Initialize Game
+            let currentPetType = null;
+            
+            petCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    currentPetType = this.getAttribute('data-pet-type');
+                    const petData = petTypes[currentPetType];
+                    
+                    if (petData) {
+                        // Update game interface with selected pet
+                        gamePetType.textContent = petData.name;
+                        petAvatar.src = petData.image;
+                        
+                        // Reset game stats
+                        resetGameStats();
+                        
+                        // Show game interface, hide pet selection
+                        petSelection.classList.add('hidden');
+                        gameInterface.classList.remove('hidden');
+                        
+                        // Add initial event
+                        addEvent(`You've adopted a ${petData.name.toLowerCase()}! It's time to start your day of care.`);
+                    }
+                });
+            });
+            
+            backToSelection.addEventListener('click', function() {
+                // Show pet selection, hide game interface
+                petSelection.classList.remove('hidden');
+                gameInterface.classList.add('hidden');
+                currentPetType = null;
+            });
+            
+            function resetGameStats() {
+                gameStats = {
+                    hunger: 75,
+                    happiness: 50,
+                    health: 90,
+                    hygiene: 60,
+                    dayProgress: 0
+                };
+                
+                updateStatsDisplay();
+                updateMood();
+            }
+            
+            function updateStatsDisplay() {
+                document.getElementById('hunger-value').textContent = `${gameStats.hunger}%`;
+                document.getElementById('happiness-value').textContent = `${gameStats.happiness}%`;
+                document.getElementById('health-value').textContent = `${gameStats.health}%`;
+                document.getElementById('hygiene-value').textContent = `${gameStats.hygiene}%`;
+                document.getElementById('day-progress').style.width = `${gameStats.dayProgress}%`;
+                
+                document.getElementById('hunger-bar').style.width = `${gameStats.hunger}%`;
+                document.getElementById('happiness-bar').style.width = `${gameStats.happiness}%`;
+                document.getElementById('health-bar').style.width = `${gameStats.health}%`;
+                document.getElementById('hygiene-bar').style.width = `${gameStats.hygiene}%`;
+            }
+            
+            function updateMood() {
+                const average = (gameStats.hunger + gameStats.happiness + gameStats.health + gameStats.hygiene) / 4;
+                let moodIcon = 'fa-meh-o';
+                
+                if (average >= 80) {
+                    moodIcon = 'fa-smile-o';
+                    petMood.className = 'absolute -top-2 -right-2 bg-green-500 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-md';
+                } else if (average >= 60) {
+                    moodIcon = 'fa-smile-o';
+                    petMood.className = 'absolute -top-2 -right-2 bg-accent text-white rounded-full w-12 h-12 flex items-center justify-center shadow-md';
+                } else if (average >= 40) {
+                    moodIcon = 'fa-meh-o';
+                    petMood.className = 'absolute -top-2 -right-2 bg-yellow-500 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-md';
+                } else {
+                    moodIcon = 'fa-frown-o';
+                    petMood.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-md';
+                }
+                
+                petMood.innerHTML = `<i class="fa ${moodIcon} text-xl"></i>`;
+            }
+            
+            function addEvent(message) {
+                const eventElement = document.createElement('p');
+                eventElement.className = 'mb-2 text-gray-700';
+                eventElement.textContent = message;
+                
+                eventContainer.appendChild(eventElement);
+                eventContainer.scrollTop = eventContainer.scrollHeight;
+            }
+            
+            gameActions.forEach(action => {
+                action.addEventListener('click', function() {
+                    const actionType = this.getAttribute('data-action');
+                    performAction(actionType);
+                });
+            });
+            
+            function performAction(actionType) {
+                if (!currentPetType) return;
+                
+                const petData = petTypes[currentPetType];
+                let eventMessage = '';
+                
+                switch(actionType) {
+                    case 'feed':
+                        gameStats.hunger = Math.min(100, gameStats.hunger + 20);
+                        gameStats.health = Math.min(100, gameStats.health + 5);
+                        eventMessage = `You fed your ${petData.name.toLowerCase()}. It seems happy and satisfied.`;
+                        break;
+                    case 'play':
+                        gameStats.happiness = Math.min(100, gameStats.happiness + 25);
+                        gameStats.hunger = Math.max(0, gameStats.hunger - 10);
+                        eventMessage = `You played with your ${petData.name.toLowerCase()}. It had a great time!`;
+                        break;
+                    case 'health':
+                        gameStats.health = Math.min(100, gameStats.health + 15);
+                        eventMessage = `You checked your ${petData.name.toLowerCase()}'s health. Everything looks good!`;
+                        break;
+                    case 'groom':
+                        gameStats.hygiene = Math.min(100, gameStats.hygiene + 20);
+                        eventMessage = `You groomed your ${petData.name.toLowerCase()}. It looks clean and comfortable now.`;
+                        break;
+                }
+                
+                // Add event to log
+                addEvent(eventMessage);
+                
+                // Update day progress
+                gameStats.dayProgress = Math.min(100, gameStats.dayProgress + 10);
+                
+                // Update stats display
+                updateStatsDisplay();
+                updateMood();
+            }
+            
+            endDayButton.addEventListener('click', function() {
+                if (!currentPetType) return;
+                
+                const petData = petTypes[currentPetType];
+                
+                // Add final event
+                addEvent(`The day has ended. You've taken care of your ${petData.name.toLowerCase()} for a day!`);
+                
+                // Show pet knowledge page
+                gameInterface.classList.add('hidden');
+                petKnowledge.classList.remove('hidden');
+                
+                // Update pet knowledge content
+                knowledgePetType.textContent = `${petData.name} Care Basics`;
+                knowledgePetImage.src = petData.image;
+                avgLifespan.textContent = petData.lifespan;
+                avgSize.textContent = petData.size;
+                diet.textContent = petData.diet;
+                exerciseNeeds.textContent = petData.exercise;
+                groomingNeeds.textContent = petData.grooming;
+                petDescription.textContent = petData.description;
+                
+                // Update care requirements list
+                careRequirements.innerHTML = '';
+                petData.careRequirements.forEach(requirement => {
+                    const li = document.createElement('li');
+                    li.textContent = requirement;
+                    careRequirements.appendChild(li);
+                });
+                
+                // Update health issues list
+                healthIssues.innerHTML = '';
+                petData.healthIssues.forEach(issue => {
+                    const li = document.createElement('li');
+                    li.textContent = issue;
+                    healthIssues.appendChild(li);
+                });
+                
+                // Update behavioral traits list
+                behavioralTraits.innerHTML = '';
+                petData.behavioralTraits.forEach(trait => {
+                    const li = document.createElement('li');
+                    li.textContent = trait;
+                    behavioralTraits.appendChild(li);
+                });
+            });
+            
+            backToGame.addEventListener('click', function() {
+                petKnowledge.classList.add('hidden');
+                gameInterface.classList.remove('hidden');
+            });
+            
+            proceedToQuiz.addEventListener('click', function() {
+                // Navigate to quiz page with the current pet type pre-selected
+                navigateToPage('quiz');
+                
+                // After a short delay, select the corresponding quiz category
+                setTimeout(() => {
+                    const quizCategory = document.querySelector(`.quiz-category[data-quiz-type="${currentPetType}"]`);
+                    if (quizCategory) {
+                        quizCategory.click();
+                    }
+                }, 100);
+            });
+            
+            // Quiz Functionality
+            const quizCategories = document.querySelectorAll('.quiz-category');
+            const quizSelection = document.getElementById('quiz-selection');
+            const quizInterface = document.getElementById('quiz-interface');
+            const backToQuizSelection = document.getElementById('back-to-quiz-selection');
+            const quizTitle = document.getElementById('quiz-title');
+            const quizProgress = document.getElementById('quiz-progress');
+            const questionText = document.getElementById('question-text');
+            const optionsContainer = document.getElementById('options-container');
+            const feedbackContainer = document.getElementById('feedback-container');
+            const correctFeedback = document.getElementById('correct-feedback');
+            const incorrectFeedback = document.getElementById('incorrect-feedback');
+            const correctExplanation = document.getElementById('correct-explanation');
+            const incorrectExplanation = document.getElementById('incorrect-explanation');
+            const prevQuestionButton = document.getElementById('prev-question');
+            const nextQuestionButton = document.getElementById('next-question');
+            const submitQuizButton = document.getElementById('submit-quiz');
+            const quizResults = document.getElementById('quiz-results');
+            const backToQuizFromResults = document.getElementById('back-to-quiz-from-results');
+            const resultsTitle = document.getElementById('results-title');
+            const resultsSubtitle = document.getElementById('results-subtitle');
+            const scorePercentage = document.getElementById('score-percentage');
+            const resultStatus = document.getElementById('result-status');
+            const resultMessage = document.getElementById('result-message');
+            const correctAnswersElement = document.getElementById('correct-answers');
+            const incorrectAnswersElement = document.getElementById('incorrect-answers');
+            const retryQuizButton = document.getElementById('retry-quiz');
+            const viewRecommendationsButton = document.getElementById('view-recommendations');
+            
+            // Quiz Questions
+            const quizQuestions = {
+                cat: [
+                    {
+                        question: "What is the average lifespan of an indoor cat?",
+                        options: [
+                            "5-8 years",
+                            "12-15 years",
+                            "18-20 years",
+                            "20-25 years"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "Indoor cats typically live 12-15 years, while outdoor cats have a shorter lifespan of 2-5 years."
+                    },
+                    {
+                        question: "What type of diet is most appropriate for cats?",
+                        options: [
+                            "Herbivorous - primarily plant-based",
+                            "Omnivorous - equal parts plant and animal-based",
+                            "Carnivorous - primarily meat-based",
+                            "Piscivorous - primarily fish-based"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Cats are obligate carnivores, meaning they require a diet primarily composed of meat to meet their nutritional needs."
+                    },
+                    {
+                        question: "How often should a cat's litter box be cleaned?",
+                        options: [
+                            "Once a week",
+                            "Once a day",
+                            "Once a month",
+                            "Only when it looks dirty"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "A cat's litter box should be scooped daily to maintain hygiene and prevent litter box aversion."
+                    },
+                    {
+                        question: "What is the most common health issue in cats?",
+                        options: [
+                            "Dental disease",
+                            "Obesity",
+                            "Diabetes",
+                            "Kidney disease"
+                        ],
+                        correctAnswer: "A",
+                        explanation: "Dental disease is the most common health issue in cats, affecting up to 85% of cats over 3 years old."
+                    },
+                    {
+                        question: "How much daily playtime does an average cat need?",
+                        options: [
+                            "10-15 minutes",
+                            "30-60 minutes",
+                            "2-3 hours",
+                            "Cats don't need structured playtime"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "Most cats need 30-60 minutes of interactive playtime daily to maintain physical and mental health."
+                    },
+                    {
+                        question: "What is the purpose of a cat's whiskers?",
+                        options: [
+                            "They help with balance",
+                            "They are sensory tools that help cats navigate and detect objects",
+                            "They are used for communication",
+                            "They have no specific purpose"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "Cat whiskers are highly sensitive tactile hairs that help cats navigate in the dark and detect objects around them."
+                    },
+                    {
+                        question: "Which of the following foods is toxic to cats?",
+                        options: [
+                            "Carrots",
+                            "Grapes and raisins",
+                            "Cooked chicken",
+                            "Rice"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "Grapes and raisins can cause kidney failure in cats, even in small amounts."
+                    },
+                    {
+                        question: "How can you tell if a cat is dehydrated?",
+                        options: [
+                            "Dry, sticky gums",
+                            "Lethargy",
+                            "Loss of appetite",
+                            "All of the above"
+                        ],
+                        correctAnswer: "D",
+                        explanation: "Signs of dehydration in cats include dry, sticky gums, lethargy, loss of appetite, sunken eyes, and decreased skin elasticity."
+                    },
+                    {
+                        question: "What is the normal body temperature range for a cat?",
+                        options: [
+                            "96-98°F (35.5-36.7°C)",
+                            "99-102.5°F (37.2-39.2°C)",
+                            "103-105°F (39.4-40.6°C)",
+                            "106-108°F (41.1-42.2°C)"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "A normal body temperature for a cat ranges from 99-102.5°F (37.2-39.2°C)."
+                    },
+                    {
+                        question: "When should a kitten receive their first vaccinations?",
+                        options: [
+                            "At birth",
+                            "2-4 weeks old",
+                            "6-8 weeks old",
+                            "12-16 weeks old"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Kittens should receive their first set of vaccinations at 6-8 weeks of age, with booster shots every 3-4 weeks until they are 16 weeks old."
+                    }
+                ],
+                dog: [
+                    {
+                        question: "What is the most important nutrient in a dog's diet?",
+                        options: [
+                            "Carbohydrates",
+                            "Fat",
+                            "Protein",
+                            "Fiber"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Protein is the most important nutrient in a dog's diet as it provides the building blocks for muscles, tissues, and organs."
+                    },
+                    {
+                        question: "How often should a dog be taken to the veterinarian for a check-up?",
+                        options: [
+                            "Once a year",
+                            "Every 6 months",
+                            "Only when sick",
+                            "Once every 2 years"
+                        ],
+                        correctAnswer: "A",
+                        explanation: "Dogs should have a complete veterinary examination at least once a year, even if they appear healthy."
+                    },
+                    {
+                        question: "What is the primary purpose of a dog's tail?",
+                        options: [
+                            "Balance",
+                            "Communication",
+                            "Swatting insects",
+                            "All of the above"
+                        ],
+                        correctAnswer: "D",
+                        explanation: "A dog's tail serves multiple purposes including balance, communication, and swatting insects."
+                    },
+                    {
+                        question: "Which of the following is NOT a sign of a dog being happy?",
+                        options: [
+                            "Wagging tail",
+                            "Ears forward and relaxed",
+                            "Lip licking",
+                            "Play bow"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Lip licking is typically a sign of stress or anxiety in dogs, not happiness."
+                    },
+                    {
+                        question: "How much exercise does a typical adult dog need daily?",
+                        options: [
+                            "10-15 minutes",
+                            "30-60 minutes",
+                            "2-3 hours",
+                            "It depends on the breed and age"
+                        ],
+                        correctAnswer: "D",
+                        explanation: "Exercise needs vary greatly depending on the dog's breed, age, size, and health status."
+                    },
+                    {
+                        question: "What is the most common behavioral problem in dogs?",
+                        options: [
+                            "Aggression",
+                            "Separation anxiety",
+                            "Excessive barking",
+                            "House soiling"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Excessive barking is the most common behavioral problem reported by dog owners."
+                    },
+                    {
+                        question: "Which of the following foods is toxic to dogs?",
+                        options: [
+                            "Peanut butter",
+                            "Chocolate",
+                            "Cooked rice",
+                            "Apples"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "Chocolate contains theobromine, which is toxic to dogs and can cause serious health problems or death."
+                    },
+                    {
+                        question: "When should a puppy start obedience training?",
+                        options: [
+                            "8-12 weeks old",
+                            "6 months old",
+                            "1 year old",
+                            "When they reach full size"
+                        ],
+                        correctAnswer: "A",
+                        explanation: "Puppies can start basic obedience training as early as 8-12 weeks old when they have had their vaccinations."
+                    },
+                    {
+                        question: "What is the normal body temperature range for a dog?",
+                        options: [
+                            "96-98°F (35.5-36.7°C)",
+                            "99.5-102.5°F (37.5-39.2°C)",
+                            "103-105°F (39.4-40.6°C)",
+                            "106-108°F (41.1-42.2°C)"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "A normal body temperature for a dog ranges from 99.5-102.5°F (37.5-39.2°C)."
+                    },
+                    {
+                        question: "How often should a dog's nails be trimmed?",
+                        options: [
+                            "Once a week",
+                            "Every 2-4 weeks",
+                            "Once a month",
+                            "Only when they click on the floor"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "Most dogs need their nails trimmed every 2-4 weeks, depending on how quickly they grow and how much they wear down naturally."
+                    }
+                ],
+                rabbit: [
+                    {
+                        question: "What is the primary component of a rabbit's diet?",
+                        options: [
+                            "Commercial rabbit pellets",
+                            "Fresh vegetables",
+                            "Hay",
+                            "Fruits"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Hay should make up 70-80% of a rabbit's diet as it provides essential fiber for digestive health."
+                    },
+                    {
+                        question: "Can rabbits be litter trained?",
+                        options: [
+                            "No, rabbits are not trainable",
+                            "Yes, with patience and consistency",
+                            "Only some breeds can be litter trained",
+                            "Only if trained from birth"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "Most rabbits can be successfully litter trained with patience, consistency, and positive reinforcement."
+                    },
+                    {
+                        question: "What is the average lifespan of a pet rabbit?",
+                        options: [
+                            "2-3 years",
+                            "5-7 years",
+                            "8-12 years",
+                            "15-20 years"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "With proper care, pet rabbits typically live 8-12 years."
+                    },
+                    {
+                        question: "Which of the following is NOT a sign of a healthy rabbit?",
+                        options: [
+                            "Bright, clear eyes",
+                            "Clean ears and nose",
+                            "Soft, shiny coat",
+                            "Lethargy and loss of appetite"
+                        ],
+                        correctAnswer: "D",
+                        explanation: "Lethargy and loss of appetite are signs of illness in rabbits and should be evaluated by a veterinarian immediately."
+                    },
+                    {
+                        question: "What is the most common health problem in rabbits?",
+                        options: [
+                            "Dental disease",
+                            "Respiratory infections",
+                            "Gastrointestinal stasis",
+                            "Ear mites"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Gastrointestinal stasis (GI stasis) is a life-threatening condition where the digestive system slows down or stops completely."
+                    },
+                    {
+                        question: "How often should a rabbit's cage be cleaned?",
+                        options: [
+                            "Once a week",
+                            "Every 2-3 days",
+                            "Daily spot cleaning and weekly deep cleaning",
+                            "Only when it smells"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Rabbits are clean animals and their cages should be spot cleaned daily with a complete deep cleaning once a week."
+                    },
+                    {
+                        question: "Can rabbits be kept outdoors?",
+                        options: [
+                            "Yes, rabbits are outdoor animals",
+                            "No, rabbits should never be kept outdoors",
+                            "Yes, but only in a secure, predator-proof enclosure with proper shelter",
+                            "Only in warm climates"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Rabbits can be kept outdoors if provided with a secure, predator-proof enclosure that protects them from extreme temperatures, predators, and other dangers."
+                    },
+                    {
+                        question: "What is the purpose of a rabbit's dewlap?",
+                        options: [
+                            "It helps with balance",
+                            "It's used for communication",
+                            "Female rabbits use it to carry nesting material",
+                            "It has no specific purpose"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "The dewlap is a fold of skin under the chin, more prominent in females, which is used to carry nesting material."
+                    },
+                    {
+                        question: "Which of the following foods is toxic to rabbits?",
+                        options: [
+                            "Carrots",
+                            "Lettuce",
+                            "Chocolate",
+                            "Apples (without seeds)"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Chocolate is toxic to rabbits, as it is to many animals, and can cause serious health problems or death."
+                    },
+                    {
+                        question: "How much space does a rabbit need in their enclosure?",
+                        options: [
+                            "At least 2 times the rabbit's length",
+                            "At least 4 times the rabbit's length",
+                            "At least 8 times the rabbit's length",
+                            "Size doesn't matter as long as they have toys"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "A rabbit's enclosure should be at least 8 times the rabbit's length to allow for movement, standing on hind legs, and stretching out."
+                    }
+                ],
+                turtle: [
+                    {
+                        question: "What is the most important environmental requirement for pet turtles?",
+                        options: [
+                            "UVB lighting",
+                            "Heating pad",
+                            "Water filter",
+                            "All of the above"
+                        ],
+                        correctAnswer: "D",
+                        explanation: "Turtles require UVB lighting for calcium metabolism, a heating pad or lamp to maintain proper temperature, and a water filter to keep their environment clean."
+                    },
+                    {
+                        question: "What type of diet is appropriate for most pet turtles?",
+                        options: [
+                            "Herbivorous - primarily plant-based",
+                            "Carnivorous - primarily meat-based",
+                            "Omnivorous - combination of plant and animal-based",
+                            "Piscivorous - primarily fish-based"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Most pet turtles are omnivores, requiring a balanced diet of both plant and animal matter."
+                    },
+                    {
+                        question: "How often should a turtle's water be changed?",
+                        options: [
+                            "Daily",
+                            "Once a week",
+                            "Every 2-3 weeks",
+                            "Only when it looks dirty"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "Even with a filter, a turtle's water should be partially changed weekly and completely changed monthly."
+                    },
+                    {
+                        question: "What is the average lifespan of a pet turtle?",
+                        options: [
+                            "5-10 years",
+                            "10-20 years",
+                            "20-40 years",
+                            "50+ years"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Most pet turtles live 20-40 years with proper care, making them a long-term commitment."
+                    },
+                    {
+                        question: "What is the purpose of a turtle's basking area?",
+                        options: [
+                            "To dry off",
+                            "To regulate body temperature",
+                            "To absorb UVB rays",
+                            "All of the above"
+                        ],
+                        correctAnswer: "D",
+                        explanation: "Basking areas serve multiple purposes: regulating body temperature, drying off to prevent shell rot, and absorbing UVB rays for calcium metabolism."
+                    },
+                    {
+                        question: "Which of the following is a sign of a healthy turtle?",
+                        options: [
+                            "Clear, bright eyes",
+                            "Smooth shell with no soft spots",
+                            "Active swimming and eating",
+                            "All of the above"
+                        ],
+                        correctAnswer: "D",
+                        explanation: "Signs of a healthy turtle include clear, bright eyes; a smooth shell with no soft spots, cracks, or discoloration; and active swimming and eating behavior."
+                    },
+                    {
+                        question: "How can you determine the gender of a turtle?",
+                        options: [
+                            "By the color of their shell",
+                            "By the length of their tail and shape of their plastron",
+                            "By their size",
+                            "You can't determine the gender of a turtle"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "In most turtle species, males have longer tails and a concave plastron (bottom shell), while females have shorter tails and a flat or convex plastron."
+                    },
+                    {
+                        question: "What is shell rot in turtles?",
+                        options: [
+                            "A fungal or bacterial infection of the shell",
+                            "A normal part of the shell growth process",
+                            "A condition caused by overfeeding",
+                            "A genetic condition"
+                        ],
+                        correctAnswer: "A",
+                        explanation: "Shell rot is a fungal or bacterial infection of the shell that can occur when turtles are kept in dirty or improperly maintained environments."
+                    },
+                    {
+                        question: "How often should a turtle be fed?",
+                        options: [
+                            "Daily",
+                            "Every other day",
+                            "2-3 times a week",
+                            "Once a week"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "Most adult turtles should be fed every other day, while juvenile turtles may need to be fed daily."
+                    },
+                    {
+                        question: "What is the ideal temperature range for a turtle's water?",
+                        options: [
+                            "60-70°F (15.5-21.1°C)",
+                            "75-85°F (23.9-29.4°C)",
+                            "85-95°F (29.4-35°C)",
+                            "Room temperature"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "The ideal water temperature for most pet turtles is between 75-85°F (23.9-29.4°C), with a basking area that's 10-15°F warmer."
+                    }
+                ],
+                lizard: [
+                    {
+                        question: "What is the most important environmental requirement for pet lizards?",
+                        options: [
+                            "UVB lighting",
+                            "Proper temperature gradient",
+                            "Humidity control",
+                            "All of the above"
+                        ],
+                        correctAnswer: "D",
+                        explanation: "Lizards require UVB lighting for calcium metabolism, a proper temperature gradient to regulate body temperature, and appropriate humidity levels specific to their species."
+                    },
+                    {
+                        question: "Which of the following is NOT a common type of pet lizard?",
+                        options: [
+                            "Bearded dragon",
+                            "Leopard gecko",
+                            "Green iguana",
+                            "Red-eared slider"
+                        ],
+                        correctAnswer: "D",
+                        explanation: "Red-eared sliders are turtles, not lizards. The other options are all common pet lizard species."
+                    },
+                    {
+                        question: "What type of diet is appropriate for bearded dragons?",
+                        options: [
+                            "Herbivorous - primarily plant-based",
+                            "Carnivorous - primarily insect-based",
+                            "Omnivorous - combination of insects and plants",
+                            "Piscivorous - primarily fish-based"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Bearded dragons are omnivores, eating a combination of insects and plants. Juveniles require more insects, while adults eat more plants."
+                    },
+                    {
+                        question: "What is the purpose of shedding in lizards?",
+                        options: [
+                            "To remove parasites",
+                            "To grow",
+                            "To change color",
+                            "All of the above"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "Lizards shed their skin to accommodate growth, as their skin doesn't grow with their bodies like mammalian skin does."
+                    },
+                    {
+                        question: "How often do most pet lizards shed their skin?",
+                        options: [
+                            "Once a week",
+                            "Once a month",
+                            "Every 2-3 months",
+                            "It varies by species and age"
+                        ],
+                        correctAnswer: "D",
+                        explanation: "Shedding frequency varies by species, age, and growth rate. Juvenile lizards shed more frequently than adults."
+                    },
+                    {
+                        question: "What is metabolic bone disease in lizards?",
+                        options: [
+                            "A bacterial infection of the bones",
+                            "A condition caused by calcium or vitamin D deficiency",
+                            "A genetic bone disorder",
+                            "A condition caused by overfeeding"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "Metabolic bone disease is a common condition in captive lizards caused by calcium or vitamin D deficiency, often due to insufficient UVB lighting."
+                    },
+                    {
+                        question: "Which of the following is a sign of stress in lizards?",
+                        options: [
+                            "Loss of appetite",
+                            "Hiding more than usual",
+                            "Color changes",
+                            "All of the above"
+                        ],
+                        correctAnswer: "D",
+                        explanation: "Signs of stress in lizards include loss of appetite, increased hiding, color changes, and abnormal behaviors."
+                    },
+                    {
+                        question: "How should you handle a pet lizard?",
+                        options: [
+                            "By the tail",
+                            "By the limbs",
+                            "Supporting the body with both hands",
+                            "Lizards should never be handled"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Lizards should be handled gently, with support for their entire body to prevent injury or stress."
+                    },
+                    {
+                        question: "What is the ideal temperature gradient for most pet lizards?",
+                        options: [
+                            "70-80°F (21.1-26.7°C) on both sides",
+                            "75-85°F (23.9-29.4°C) on the cool side, 90-100°F (32.2-37.8°C) on the warm side",
+                            "85-95°F (29.4-35°C) on both sides",
+                            "Room temperature is sufficient"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "Most pet lizards require a temperature gradient with a cool side (75-85°F) and a warm side (90-100°F) to properly regulate their body temperature."
+                    },
+                    {
+                        question: "What type of substrate is NOT appropriate for most pet lizards?",
+                        options: [
+                            "Reptile carpet",
+                            "Paper towels",
+                            "Calcium sand",
+                            "Ceramic tiles"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Calcium sand can cause impaction if ingested, especially in young lizards. Other options are safer substrates."
+                    }
+                ],
+                'small-mammal': [
+                    {
+                        question: "Which of the following small mammals is NOT typically kept as a pet?",
+                        options: [
+                            "Hamster",
+                            "Guinea pig",
+                            "Rabbit",
+                            "Field mouse"
+                        ],
+                        correctAnswer: "D",
+                        explanation: "Field mice are not typically kept as pets. Hamsters, guinea pigs, and rabbits are all common small mammal pets."
+                    },
+                    {
+                        question: "What type of diet is appropriate for guinea pigs?",
+                        options: [
+                            "Herbivorous - primarily hay, vegetables, and pellets",
+                            "Carnivorous - primarily meat-based",
+                            "Omnivorous - combination of plant and animal-based",
+                            "Piscivorous - primarily fish-based"
+                        ],
+                        correctAnswer: "A",
+                        explanation: "Guinea pigs are herbivores and require a diet rich in hay, fresh vegetables, and guinea pig pellets."
+                    },
+                    {
+                        question: "Which small mammal is known for being nocturnal?",
+                        options: [
+                            "Guinea pig",
+                            "Hamster",
+                            "Rat",
+                            "Ferret"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "Hamsters are primarily nocturnal, meaning they are most active at night."
+                    },
+                    {
+                        question: "What is the average lifespan of a pet hamster?",
+                        options: [
+                            "1-2 years",
+                            "3-4 years",
+                            "5-6 years",
+                            "7-8 years"
+                        ],
+                        correctAnswer: "A",
+                        explanation: "Pet hamsters typically live 1-2 years, making them relatively short-lived pets."
+                    },
+                    {
+                        question: "Which small mammal is known for being highly social and needing same-species companionship?",
+                        options: [
+                            "Hamster",
+                            "Gerbil",
+                            "Guinea pig",
+                            "Hedgehog"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Guinea pigs are highly social animals and should be kept in pairs or small groups for their emotional well-being."
+                    },
+                    {
+                        question: "What is the most common health issue in small mammals?",
+                        options: [
+                            "Dental disease",
+                            "Respiratory infections",
+                            "GI stasis",
+                            "All of the above"
+                        ],
+                        correctAnswer: "D",
+                        explanation: "Small mammals are prone to dental disease, respiratory infections, and GI stasis, among other health issues."
+                    },
+                    {
+                        question: "Which of the following is NOT a sign of illness in small mammals?",
+                        options: [
+                            "Loss of appetite",
+                            "Lethargy",
+                            "Hiding more than usual",
+                            "Grooming regularly"
+                        ],
+                        correctAnswer: "D",
+                        explanation: "Regular grooming is a sign of a healthy small mammal. Loss of appetite, lethargy, and increased hiding are signs of illness."
+                    },
+                    {
+                        question: "How often should a small mammal's cage be cleaned?",
+                        options: [
+                            "Daily spot cleaning and weekly deep cleaning",
+                            "Once a week",
+                            "Every 2-3 weeks",
+                            "Only when it smells"
+                        ],
+                        correctAnswer: "A",
+                        explanation: "Small mammal cages should be spot cleaned daily (removing soiled bedding and food waste) and completely cleaned once a week."
+                    },
+                    {
+                        question: "Which small mammal is known for its ability to bond closely with humans?",
+                        options: [
+                            "Hamster",
+                            "Rat",
+                            "Gerbil",
+                            "Chinchilla"
+                        ],
+                        correctAnswer: "B",
+                        explanation: "Rats are highly intelligent and social animals that can form strong bonds with their human caregivers."
+                    },
+                    {
+                        question: "What type of bedding is NOT appropriate for small mammals?",
+                        options: [
+                            "Aspen shavings",
+                            "Paper-based bedding",
+                            "Cedar shavings",
+                            "Fleece liners"
+                        ],
+                        correctAnswer: "C",
+                        explanation: "Cedar shavings contain aromatic oils that can be harmful to small mammals' respiratory systems. Aspen shavings, paper-based bedding, and fleece liners are safer options."
+                    }
+                ]
+            };
+            
+            // Quiz State
+            let currentQuizType = null;
+            let currentQuestionIndex = 0;
+            let userAnswers = [];
+            let quizQuestionsData = [];
+            
+            quizCategories.forEach(category => {
+                category.addEventListener('click', function() {
+                    currentQuizType = this.getAttribute('data-quiz-type');
+                    quizQuestionsData = quizQuestions[currentQuizType];
+                    
+                    if (quizQuestionsData) {
+                        // Reset quiz state
+                        currentQuestionIndex = 0;
+                        userAnswers = new Array(quizQuestionsData.length).fill(null);
+                        
+                        // Update quiz interface
+                        quizTitle.textContent = `${petTypes[currentQuizType].name} Care Quiz`;
+                        loadQuestion(0);
+                        
+                        // Show quiz interface, hide quiz selection
+                        quizSelection.classList.add('hidden');
+                        quizInterface.classList.remove('hidden');
+                    }
+                });
+            });
+            
+            backToQuizSelection.addEventListener('click', function() {
+                // Show quiz selection, hide quiz interface
+                quizSelection.classList.remove('hidden');
+                quizInterface.classList.add('hidden');
+                currentQuizType = null;
+            });
+            
+            function loadQuestion(index) {
+                if (index >= quizQuestionsData.length) return;
+                
+                const question = quizQuestionsData[index];
+                
+                // Update question text and options
+                questionText.textContent = question.question;
+                quizProgress.textContent = `Question ${index + 1} of ${quizQuestionsData.length}`;
+                
+                // Clear options container
+                optionsContainer.innerHTML = '';
+                
+                // Add options
+                const optionLabels = ['A', 'B', 'C', 'D'];
+                question.options.forEach((option, i) => {
+                    const optionElement = document.createElement('div');
+                    optionElement.className = `quiz-option border border-gray-200 rounded-lg p-4 cursor-pointer ${userAnswers[index] === optionLabels[i] ? 'border-primary bg-primary bg-opacity-10' : ''}`;
+                    optionElement.setAttribute('data-option', optionLabels[i]);
+                    
+                    optionElement.innerHTML = `
+                        <span class="font-medium mr-2">${optionLabels[i]}.</span>
+                        <span>${option}</span>
+                    `;
+                    
+                    optionElement.addEventListener('click', function() {
+                        selectOption(optionLabels[i]);
+                    });
+                    
+                    optionsContainer.appendChild(optionElement);
+                });
+                
+                // Hide feedback
+                feedbackContainer.classList.add('hidden');
+                correctFeedback.classList.add('hidden');
+                incorrectFeedback.classList.add('hidden');
+                
+                // Update navigation buttons
+                prevQuestionButton.disabled = index === 0;
+                nextQuestionButton.classList.add('hidden');
+                submitQuizButton.classList.add('hidden');
+                
+                if (userAnswers[index] !== null) {
+                    showFeedback(userAnswers[index] === question.correctAnswer);
+                }
+            }
+            
+            function selectOption(option) {
+                userAnswers[currentQuestionIndex] = option;
+                
+                // Update UI to show selected option
+                document.querySelectorAll('.quiz-option').forEach(el => {
+                    el.classList.remove('border-primary', 'bg-primary', 'bg-opacity-10');
+                    if (el.getAttribute('data-option') === option) {
+                        el.classList.add('border-primary', 'bg-primary', 'bg-opacity-10');
+                    }
+                });
+                
+                // Show feedback
+                const isCorrect = option === quizQuestionsData[currentQuestionIndex].correctAnswer;
+                showFeedback(isCorrect);
+            }
+            
+            function showFeedback(isCorrect) {
+                feedbackContainer.classList.remove('hidden');
+                
+                if (isCorrect) {
+                    correctFeedback.classList.remove('hidden');
+                    incorrectFeedback.classList.add('hidden');
+                    correctExplanation.textContent = quizQuestionsData[currentQuestionIndex].explanation;
+                } else {
+                    correctFeedback.classList.add('hidden');
+                    incorrectFeedback.classList.remove('hidden');
+                    incorrectExplanation.textContent = `The correct answer is ${quizQuestionsData[currentQuestionIndex].correctAnswer}. ${quizQuestionsData[currentQuestionIndex].explanation}`;
+                }
+                
+                // Show next button
+                nextQuestionButton.classList.remove('hidden');
+                
+                // Show submit button if last question
+                if (currentQuestionIndex === quizQuestionsData.length - 1) {
+                    nextQuestionButton.classList.add('hidden');
+                    submitQuizButton.classList.remove('hidden');
+                }
+            }
+            
+            prevQuestionButton.addEventListener('click', function() {
+                if (currentQuestionIndex > 0) {
+                    currentQuestionIndex--;
+                    loadQuestion(currentQuestionIndex);
+                }
+            });
+            
+            nextQuestionButton.addEventListener('click', function() {
+                if (currentQuestionIndex < quizQuestionsData.length - 1) {
+                    currentQuestionIndex++;
+                    loadQuestion(currentQuestionIndex);
+                }
+            });
+            
+            submitQuizButton.addEventListener('click', function() {
+                // Calculate score
+                let correctCount = 0;
+                userAnswers.forEach((answer, index) => {
+                    if (answer === quizQuestionsData[index].correctAnswer) {
+                        correctCount++;
+                    }
+                });
+                
+                const score = (correctCount / quizQuestionsData.length) * 100;
+                const passed = score >= 80;
+                
+                // Update results
+                resultsSubtitle.textContent = `${petTypes[currentQuizType].name} Care Quiz`;
+                scorePercentage.textContent = `${Math.round(score)}%`;
+                correctAnswersElement.textContent = correctCount;
+                incorrectAnswersElement.textContent = quizQuestionsData.length - correctCount;
+                
+                if (passed) {
+                    resultStatus.textContent = 'Congratulations!';
+                    resultStatus.className = 'text-2xl font-semibold text-dark mb-2';
+                    resultMessage.textContent = `You have successfully passed the ${petTypes[currentQuizType].name} Care Quiz. You're ready to learn about ${petTypes[currentQuizType].name.toLowerCase()}s available for adoption!`;
+                } else {
+                    resultStatus.textContent = 'Better Luck Next Time';
+                    resultStatus.className = 'text-2xl font-semibold text-red-500 mb-2';
+                    resultMessage.textContent = `You need to score at least 80% to pass. Review the material and try again to see ${petTypes[currentQuizType].name.toLowerCase()} recommendations.`;
+                    viewRecommendationsButton.classList.add('hidden');
+                }
+                
+                // Show results page
+                quizInterface.classList.add('hidden');
+                quizResults.classList.remove('hidden');
+            });
+            
+            backToQuizFromResults.addEventListener('click', function() {
+                // Show quiz selection, hide results
+                quizResults.classList.add('hidden');
+                quizSelection.classList.remove('hidden');
+                currentQuizType = null;
+            });
+            
+            retryQuizButton.addEventListener('click', function() {
+                // Reset quiz state
+                currentQuestionIndex = 0;
+                userAnswers = new Array(quizQuestionsData.length).fill(null);
+                
+                // Load first question
+                loadQuestion(0);
+                
+                // Show quiz interface, hide results
+                quizResults.classList.add('hidden');
+                quizInterface.classList.remove('hidden');
+            });
+            
+            viewRecommendationsButton.addEventListener('click', function() {
+                // Navigate to recommendations page
+                navigateToPage('recommendations');
+                
+                // Filter recommendations by current quiz type
+                setTimeout(() => {
+                    document.getElementById('pet-type-filter').value = currentQuizType;
+                    filterRecommendations();
+                }, 100);
+            });
+            
+            // Recommendations Filter
+            const petTypeFilter = document.getElementById('pet-type-filter');
+            const careLevelFilter = document.getElementById('care-level-filter');
+            const ageFilter = document.getElementById('age-filter');
+            
+            petTypeFilter.addEventListener('change', filterRecommendations);
+            careLevelFilter.addEventListener('change', filterRecommendations);
+            ageFilter.addEventListener('change', filterRecommendations);
+            
+            function filterRecommendations() {
+                const typeValue = petTypeFilter.value;
+                const careLevelValue = careLevelFilter.value;
+                const ageValue = ageFilter.value;
+                
+                document.querySelectorAll('.pet-recommendation').forEach(card => {
+                    const cardType = card.getAttribute('data-pet-type');
+                    const cardCareLevel = card.getAttribute('data-care-level');
+                    const cardAge = card.getAttribute('data-age');
+                    
+                    const typeMatch = typeValue === 'all' || cardType === typeValue;
+                    const careLevelMatch = careLevelValue === 'all' || cardCareLevel === careLevelValue;
+                    const ageMatch = ageValue === 'all' || cardAge === ageValue;
+                    
+                    if (typeMatch && careLevelMatch && ageMatch) {
+                        card.classList.remove('hidden');
+                    } else {
+                        card.classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Adoption Modal
+            const adoptionModal = document.getElementById('adoption-modal');
+            const closeModal = document.getElementById('close-modal');
+            const cancelAdoption = document.getElementById('cancel-adoption');
+            const confirmAdoption = document.getElementById('confirm-adoption');
+            const modalPetName = document.getElementById('modal-pet-name');
+            const modalPetName2 = document.getElementById('modal-pet-name-2');
+            const successModal = document.getElementById('success-modal');
+            const closeSuccessModal = document.getElementById('close-success-modal');
+            const successPetName = document.getElementById('success-pet-name');
+            const adoptButtons = document.querySelectorAll('.adopt-button');
+            
+            let currentPetName = null;
+            
+            adoptButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    currentPetName = this.closest('.pet-recommendation').querySelector('h3').textContent;
+                    modalPetName.textContent = currentPetName;
+                    modalPetName2.textContent = currentPetName;
+                    adoptionModal.classList.remove('hidden');
+                });
+            });
+            
+            closeModal.addEventListener('click', function() {
+                adoptionModal.classList.add('hidden');
+            });
+            
+            cancelAdoption.addEventListener('click', function() {
+                adoptionModal.classList.add('hidden');
+            });
+            
+            confirmAdoption.addEventListener('click', function() {
+                adoptionModal.classList.add('hidden');
+                successPetName.textContent = currentPetName;
+                successModal.classList.remove('hidden');
+            });
+            
+            closeSuccessModal.addEventListener('click', function() {
+                successModal.classList.add('hidden');
+            });
+            
+            // Close modals when clicking outside
+            window.addEventListener('click', function(e) {
+                if (e.target === adoptionModal) {
+                    adoptionModal.classList.add('hidden');
+                }
+                
+                if (e.target === successModal) {
+                    successModal.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
